@@ -69,9 +69,9 @@ export function drawEnergy(
   line(ctx, left, topY, right, baseY, ink);
   line(ctx, 24, baseY, w - 24, baseY, '#a1b4ab');
   if (annotations) {
-    label(ctx, `h = ${p.h.toFixed(1)} m`, left + 8, topY - 14, ink, 'left');
+    label(ctx, `h₀ = ${p.h.toFixed(1)} m`, left + 8, topY - 14, ink, 'left');
     label(ctx, `β = ${Math.round((p.beta * 180) / Math.PI)}°`, right - 38, baseY - 12);
-    label(ctx, 'Mốc thế năng · y = 0', right, baseY + 24, ink, 'right');
+    label(ctx, 'Mốc thế năng · h = 0', right, baseY + 24, ink, 'right');
     if (s.height > 0 && s.distance > 0) line(ctx, x, y, x, baseY, '#87ab99', [4, 4]);
   }
   ctx.beginPath();

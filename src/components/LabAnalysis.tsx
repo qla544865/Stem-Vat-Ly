@@ -60,18 +60,18 @@ export function CollisionAnalysis({ plan, time }: { plan: CollisionPlan; time: n
 
 export function EnergyBars({ state }: { state: ReturnType<typeof energyState> }) {
   const bars = [
-    ['Động năng', 'Eₖ', state.kinetic, '#b7762d'],
-    ['Thế năng', 'Eₚ', state.potential, '#426da4'],
-    ['Cơ năng', 'E', state.total, '#087f73'],
+    ['Động năng', 'đ', state.kinetic, '#b7762d'],
+    ['Thế năng', 't', state.potential, '#426da4'],
+    ['Cơ năng', '', state.total, '#087f73'],
   ] as const;
   return (
     <section className="graph-card card energy-analysis" aria-label="Biểu đồ năng lượng">
       <h2>Sự chuyển hóa cơ năng</h2>
       <div className="energy-bars">
-        {bars.map(([label, symbol, value, color]) => (
-          <div className="energy-bar" key={symbol}>
+        {bars.map(([label, subscript, value, color]) => (
+          <div className="energy-bar" key={label}>
             <span>
-              {label} · {symbol}
+              {label} · W{subscript && <sub>{subscript}</sub>}
             </span>
             <strong>{format(value, 2)} J</strong>
             <div className="energy-track" aria-hidden="true">

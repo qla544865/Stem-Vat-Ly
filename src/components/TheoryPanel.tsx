@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { SimulationConfig } from '../simulations/catalog.ts';
 import { springState } from '../simulations/spring/physics.ts';
 import { hookeState } from '../simulations/spring/hooke.ts';
@@ -119,7 +120,7 @@ export function readouts(
     case 'energy': {
       const s = energyState(config.params, time);
       return [
-        item('Độ cao hiện tại', 'y', s.height, 'm', 'blue', 2),
+        item('Độ cao hiện tại', 'h', s.height, 'm', 'blue', 2),
         item('Tốc độ dọc dốc', 'v', s.speed, 'm/s', 'gold', 2),
         item('Gia tốc dọc dốc', 'a', s.acceleration, 'm/s²', 'teal', 2),
       ];
@@ -134,8 +135,8 @@ export default function TheoryPanel({
   config: SimulationConfig;
   time: number;
 }) {
-  let formula = '',
-    explanation = '';
+  let formula: ReactNode = '';
+  let explanation = '';
   let equations: string[] = [];
   switch (c.kind) {
     case 'hooke': {
@@ -242,15 +243,20 @@ export default function TheoryPanel({
     }
     case 'energy': {
       const s = energyState(c.params, time);
-      formula = 'E = ½mv² + mgy';
+      formula = (
+        <>
+          W = W<sub>đ</sub> + W<sub>t</sub> = ½mv<sup>2</sup> + mgh
+        </>
+      );
       explanation =
         'Phản lực vuông góc với chuyển động nên công của phản lực bằng 0. Thế năng giảm đúng bằng phần động năng tăng.';
       equations = [
         'a = g sin β',
-        's = ½at² · L = h/sin β',
+        's = ½at² · L = h₀/sin β',
         `t đến chân dốc = ${format(s.end)} s`,
-        'v tại chân dốc = √(2gh)',
-        `E = mgh = ${format(s.initial, 2)} J`,
+        'v tại chân dốc = √(2gh₀)',
+        `W = mgh₀ = ${format(s.initial, 2)} J`,
+        'h là độ cao hiện tại so với chân dốc, h₀ là độ cao ban đầu.',
       ];
       break;
     }

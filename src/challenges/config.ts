@@ -288,8 +288,9 @@ export const challenges: Challenge[] = [
     title: 'Tìm độ cao để đạt 10 m/s',
     description:
       'Chỉnh độ cao thả vật để vận tốc tại chân dốc đạt 10 m/s. Dốc không ma sát và g = 10 m/s².',
-    hint: 'Đặt mgh = ½mv² tại chân dốc và giải theo h.',
-    explanation: 'Độ cao 5 m cho v = √(2gh) = 10 m/s. Khối lượng và góc dốc không đổi kết quả này.',
+    hint: 'Đặt mgh₀ = ½mv² tại chân dốc và giải theo độ cao ban đầu h₀.',
+    explanation:
+      'Độ cao 5 m cho v = √(2gh₀) = 10 m/s. Khối lượng và góc dốc không đổi kết quả này.',
     editable: ['h'],
     initial: { ...energyDefaults },
     target: 10,
@@ -310,7 +311,7 @@ export const challenges: Challenge[] = [
     target: 0,
     tolerance: 1e-8,
     goalLabel: 'DỰ ĐOÁN NĂNG LƯỢNG',
-    goalDisplay: 'Eₖ + Eₚ',
+    goalDisplay: 'W',
     answer: {
       label: 'Dự đoán của bạn',
       choices: [

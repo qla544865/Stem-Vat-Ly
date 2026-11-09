@@ -403,7 +403,7 @@ export const parameterSpecs: Record<Model, ParameterSpec[]> = {
     {
       key: 'h',
       label: 'Độ cao ban đầu',
-      symbol: 'h',
+      symbol: 'h₀',
       unit: 'm',
       min: 0.5,
       max: 12,
