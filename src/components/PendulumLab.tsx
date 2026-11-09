@@ -1,6 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { modelPath } from '../navigation.ts';
-import { groups } from '../simulations/catalog.ts';
+import { areaPath } from '../navigation.ts';
 import type { Dispatch, SetStateAction } from 'react';
 import type { DisplayOptions, Parameter } from '../simulations/catalog.ts';
 import { useSimulation } from '../simulations/useSimulation.ts';
@@ -24,6 +23,7 @@ import type { PendulumParams } from '../simulations/pendulum/physics.ts';
 import PendulumSimulation from '../simulations/pendulum/PendulumSimulation';
 import PendulumResults, { Conclusion, PendulumTable } from './PendulumResults';
 import ControlPanel from './ControlPanel';
+import CatalogSelect from './CatalogSelect';
 import Icon from './Icon';
 
 const views = { sandbox: 'Sandbox', practice: 'Thực hành', results: 'Kết quả & đồ thị' } as const;
@@ -202,7 +202,7 @@ export default function PendulumLab({
     <div className={`pendulum-lab${presenting ? ' pendulum-presenting' : ''}`}>
       <div className="pendulum-title">
         <div>
-          <a className="back-link pendulum-secondary" href="#/">
+          <a className="back-link pendulum-secondary" href={areaPath.experiments}>
             <Icon name="back" size={16} /> Chọn thí nghiệm khác
           </a>
           <h1>
@@ -234,21 +234,7 @@ export default function PendulumLab({
             </button>
           ))}
         </div>
-        <select
-          className="lab-quick-select pendulum-secondary"
-          aria-label="Chọn nhóm thí nghiệm"
-          value="pendulum"
-          onChange={(event) => {
-            const next = groups.find((group) => group.id === event.target.value);
-            if (next) window.location.hash = modelPath[next.model];
-          }}
-        >
-          {groups.map((group) => (
-            <option key={group.id} value={group.id}>
-              {group.title}
-            </option>
-          ))}
-        </select>
+        <CatalogSelect model="pendulum" className="pendulum-secondary" />
       </nav>
 
       {view === 'results' ? (

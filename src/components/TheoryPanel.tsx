@@ -4,6 +4,13 @@ import { hookeState } from '../simulations/spring/hooke.ts';
 import { torqueState } from '../simulations/torque/physics.ts';
 import { circularState } from '../simulations/circular/physics.ts';
 import { projectileState } from '../simulations/projectile/physics.ts';
+import {
+  collisionPlan,
+  collisionState,
+  collisionTotals,
+} from '../simulations/collision/physics.ts';
+import type { CollisionPlan } from '../simulations/collision/physics.ts';
+import { energyState, workState } from '../simulations/energy/physics.ts';
 import Icon from './Icon';
 
 export const format = (value: number, digits = 3) =>
@@ -14,6 +21,10 @@ export const assumptions = {
   torque: 'Thanh lý tưởng bỏ qua trọng lượng; trục O cố định có phản lực. Chỉ xét cân bằng tĩnh.',
   circular: 'Chuyển động tròn đều ngược chiều kim đồng hồ; trục x sang phải, y hướng lên.',
   projectile: 'Gia tốc trọng trường không đổi; bỏ qua sức cản không khí. Trục y hướng xuống.',
+  collision:
+    'Ray ngang không ma sát. Chiều dương sang phải. Quan sát tối đa 10 s hoặc đến khi một xe chạm biên ray.',
+  work: 'Lực không đổi trên độ dời đã cho. Chỉ tính công của lực đang xét, với chiều độ dời sang phải.',
+  energy: 'Vật thả từ nghỉ, dốc cố định, bỏ qua lực cản và ma sát. Mốc thế năng ở chân dốc.',
 };
 export const learningTips = {
   hooke: 'Giữ nguyên ngoại lực, tăng độ cứng. Độ biến dạng của lò xo thay đổi thế nào?',
@@ -22,9 +33,17 @@ export const learningTips = {
   circular:
     'Theo dõi chấm tròn và hình chiếu: khi nào hình chiếu ở biên, khi nào qua vị trí cân bằng?',
   projectile: 'Thử tăng gấp đôi vận tốc ngang. Thời gian rơi và tầm xa thay đổi thế nào?',
+  collision: 'Đổi từ va chạm đàn hồi sang va chạm mềm. Đại lượng nào vẫn giữ nguyên?',
+  work: 'Thử góc 90°, rồi đổi sang góc tù. Dấu của công thay đổi thế nào?',
+  energy: 'Giữ nguyên độ cao và đổi góc dốc. So sánh thời gian trượt và vận tốc ở chân dốc.',
 };
 
-export function readouts(config: SimulationConfig, time: number, concealed: boolean) {
+export function readouts(
+  config: SimulationConfig,
+  time: number,
+  concealed: boolean,
+  collision?: CollisionPlan,
+) {
   const item = (
     label: string,
     symbol: string,
@@ -79,6 +98,31 @@ export function readouts(config: SimulationConfig, time: number, concealed: bool
       ];
       if (concealed) stats[3].value = '—';
       return stats;
+    }
+    case 'collision': {
+      const { v1, v2 } = collisionState(collision ?? collisionPlan(config.params), time);
+      const totals = collisionTotals(config.params, v1, v2);
+      return [
+        item('Vận tốc A', 'v₁', v1, 'm/s', 'teal', 2),
+        item('Vận tốc B', 'v₂', v2, 'm/s', 'blue', 2),
+        item('Tổng động lượng', 'P', totals.momentum, 'kg·m/s', 'purple', 2),
+        item('Tổng động năng', 'Eₖ', totals.kinetic, 'J', 'gold', 2),
+      ];
+    }
+    case 'work': {
+      const s = workState(config.params);
+      return [
+        item('Thành phần theo độ dời', 'F∥', s.parallel, 'N', 'blue', 2),
+        item('Công của lực', 'A', s.work, 'J', 'teal', 2),
+      ];
+    }
+    case 'energy': {
+      const s = energyState(config.params, time);
+      return [
+        item('Độ cao hiện tại', 'y', s.height, 'm', 'blue', 2),
+        item('Tốc độ dọc dốc', 'v', s.speed, 'm/s', 'gold', 2),
+        item('Gia tốc dọc dốc', 'a', s.acceleration, 'm/s²', 'teal', 2),
+      ];
     }
   }
 }
@@ -170,6 +214,43 @@ export default function TheoryPanel({
         `y hiện tại = ${format(s.y, 2)} m`,
         `t rơi = √(2h/g) = ${format(s.fallTime)} s`,
         'Gốc O tại vị trí ném, y hướng xuống.',
+      ];
+      break;
+    }
+    case 'collision':
+      formula = 'P = m₁v₁ + m₂v₂';
+      explanation =
+        'Tổng động lượng có dấu được bảo toàn khi không có ngoại lực dọc ray. Động năng giữ nguyên ở va chạm đàn hồi và giảm ở va chạm mềm khi hai xe có vận tốc khác nhau.';
+      equations = [
+        'p₁ = m₁v₁ · p₂ = m₂v₂',
+        'Eₖ = ½m₁v₁² + ½m₂v₂²',
+        'Đàn hồi · v₁′ − v₂′ = −(v₁ − v₂)',
+        'Va chạm mềm · v₁′ = v₂′ = P/(m₁ + m₂)',
+      ];
+      break;
+    case 'work': {
+      const s = workState(c.params);
+      formula = 'A = Fs cos α';
+      explanation =
+        'Chỉ thành phần lực dọc theo độ dời sinh công. Với lực và độ dời khác 0, góc nhọn cho công dương, góc tù cho công âm và góc vuông cho công bằng 0.';
+      equations = [
+        `F∥ = F cos α = ${format(s.parallel, 2)} N`,
+        `A = F∥s = ${format(s.work, 2)} J`,
+        'Nếu F hoặc s bằng 0 thì công bằng 0.',
+      ];
+      break;
+    }
+    case 'energy': {
+      const s = energyState(c.params, time);
+      formula = 'E = ½mv² + mgy';
+      explanation =
+        'Phản lực vuông góc với chuyển động nên công của phản lực bằng 0. Thế năng giảm đúng bằng phần động năng tăng.';
+      equations = [
+        'a = g sin β',
+        's = ½at² · L = h/sin β',
+        `t đến chân dốc = ${format(s.end)} s`,
+        'v tại chân dốc = √(2gh)',
+        `E = mgh = ${format(s.initial, 2)} J`,
       ];
       break;
     }

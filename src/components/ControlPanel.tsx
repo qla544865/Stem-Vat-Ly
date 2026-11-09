@@ -1,5 +1,6 @@
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import type { DisplayOptions, Model, Parameter } from '../simulations/catalog.ts';
+import { isDynamic } from '../simulations/catalog.ts';
 import Icon from './Icon';
 
 interface Props {
@@ -12,11 +13,12 @@ interface Props {
   onDisplay: (key: keyof DisplayOptions, value: boolean) => void;
   predictionLocked: boolean;
   note: string;
+  children?: ReactNode;
 }
 
 export default function ControlPanel(p: Props) {
   const toggles: { key: keyof DisplayOptions; label: string }[] = [];
-  if (['spring', 'circular', 'projectile'].includes(p.model))
+  if (['spring', 'circular', 'projectile', 'collision', 'energy'].includes(p.model))
     toggles.push({ key: 'velocity', label: 'Vector vận tốc' });
   if (['spring', 'circular'].includes(p.model))
     toggles.push({
@@ -31,9 +33,10 @@ export default function ControlPanel(p: Props) {
         <span className="heading-icon">
           <Icon name="sliders" size={18} />
         </span>
-        <h2>Thông số thí nghiệm</h2>
+        <h2>{isDynamic(p.model) ? 'Thông số thí nghiệm' : 'Thông số minh họa'}</h2>
       </div>
       <p className="panel-description">Thay đổi một chút. Khám phá nhiều hơn.</p>
+      {p.children}
       <div className="parameters">
         {p.parameters.map((parameter) => {
           const disabled =

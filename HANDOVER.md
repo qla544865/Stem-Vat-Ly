@@ -1,3 +1,51 @@
+# PHYLAB — BÀN GIAO PHASE 2B, 2C VÀ 2D
+
+**Ngày lập** 09/11/2026
+
+## Nội dung và điều hướng
+
+- **Lý thuyết** gồm Định luật Hooke, Moment lực và Công của lực. Mỗi minh họa có công thức, đơn vị và phản hồi tức thời khi đổi tham số.
+- **Thí nghiệm** gồm dao động lò xo, chuyển động tròn, ném ngang, con lắc đơn, va chạm và bảo toàn cơ năng. Các bàn động có Sandbox, điều khiển thời gian và Trình chiếu.
+- **Challenge Lab** tập hợp 15 bài từ cả hai khu vực. Bảy bài mới gồm ba bài va chạm, hai bài công và hai bài cơ năng. Mỗi bài mở được trực tiếp qua `#/challenges/<id>`.
+
+Metadata `catalog.ts` phân loại nội dung, cung cấp nhãn và điều khiển có dùng thời gian hay không. Trang chủ, menu và workspace đọc chung metadata đó. Các hash Phase 1–2A được giữ lại. `#/spring` vẫn mở Hooke. Challenge Lab mở cùng workspace với bộ thông số và điều kiện chấm từ `challenges/config.ts`.
+
+## Mô hình mới
+
+| Bàn              | Quy tắc vật lý                                                                                                                                                                                                                                           | Cách quan sát                                                                                                                               |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Va chạm          | Hai xe dài 1,2 m trên ray 20 m, bỏ qua ma sát. Tính tiếp xúc khi khoảng cách hai mép bằng 0 và `v₁ > v₂`. Va chạm đàn hồi đảo vận tốc tương đối trong hệ khối tâm, tương đương hai công thức đàn hồi 1D. Va chạm mềm cho `v′ = (m₁v₁ + m₂v₂)/(m₁ + m₂)`. | Canvas dùng nghiệm trước và sau cùng một mốc tiếp xúc. Cột Sau mở sau va chạm, kèm ΔP và ΔEₖ. Nếu chạm biên hoặc tới 10 s thì đồng hồ dừng. |
+| Công của lực     | `A = Fs cos α` cho một lực không đổi và độ dời cho trước. Góc 90° cho công bằng 0 trong dung sai số học.                                                                                                                                                 | Kéo slider để đổi dấu và độ lớn công. Canvas hiển thị lực và độ dời, với độ dài vector được scale để quan sát.                              |
+| Bảo toàn cơ năng | Dốc không ma sát, vật thả từ nghỉ. `a = g sin β`, `s = at²/2`, `L = h/sin β`, `t_hit = √(2L/a)`. `Eₖ = ½mv²`, `Eₚ = mgy`, `E = mgh`.                                                                                                                     | Đồng hồ chặn đúng ở chân dốc, tại đó `v = √(2gh)`. Ba thanh năng lượng dùng chung một thang joule.                                          |
+
+## Tệp và cách mở rộng
+
+- `src/simulations/collision/{physics,renderer}.ts` chứa nghiệm va chạm và Canvas hai xe. `src/simulations/energy/{physics,renderer}.ts` chứa công của lực và chuyển động trên dốc.
+- `LabWorkspace.tsx`, `SimulationCanvas.tsx`, `ControlPanel.tsx` và `TheoryPanel.tsx` tái sử dụng layout, Canvas và hệ điều khiển. `LabAnalysis.tsx` hiển thị bảng va chạm và thanh năng lượng. Khi trình chiếu, bảng hoặc thanh được đặt cạnh Canvas ở desktop.
+- `CatalogSelect.tsx` dùng cùng metadata với `Home.tsx`. Để chỉnh phạm vi slider, sửa `parameterSpecs` trong `catalog.ts` và giữ bộ mặc định cùng các bộ `initial` trong miền hợp lệ. Góc mang đơn vị radian trong physics, đổi sang độ ở slider.
+- Thêm thử thách trong `challenges/config.ts` với ID, model, `initial`, `editable`, mục tiêu, dung sai, gợi ý và giải thích. Nếu bài cần một sự kiện hoặc loại câu trả lời mới, mở rộng điều kiện trong `canCheckChallenge` và `validateChallenge`. Thêm test cả đường đúng và đường sai trong `tests/phase2b-c-d.test.ts`.
+
+## Kiểm chứng
+
+- Baseline trước sửa có 60/60 test, TypeScript, production build và Prettier đạt. Sau sửa có 78/78 test, gồm 18 test mới cho vật lý, đồng hồ, Challenge và catalog.
+- Bản production tại `/phylab/` đã được thử trên Chromium. Cả 15 Challenge, 10 mốc đo con lắc, đổi loại va chạm, đổi slider, bảng trước/sau và thanh cơ năng hoạt động. Kiểm tra refresh deep link, tài nguyên tương đối và bố cục 1920×1080, 1366×768, 800×900, 390×844.
+- Đếm callback RAF trong Chromium cho thấy mỗi lần chạy được kiểm tra có một frame chờ. Số frame chờ trở về 0 sau Pause và khi đổi bàn. Mô hình Công không lên lịch RAF. Trong các luồng kiểm thử không ghi nhận lỗi console hay request về cổng dev khác.
+- Rà mã ứng dụng theo các mục đầu vào số, phân giải hash, công thức, quyền truy cập và renderer. Các trang mới phân giải hash qua danh sách route có sẵn, chạy công thức TypeScript và giữ dữ liệu trong trình duyệt. Không thêm dependency.
+
+## Demo và triển khai
+
+1. Chạy `pnpm install` và `pnpm dev`. Vào **Lý thuyết → Công của lực**, lần lượt chọn 0°, 90° và 180° để so sánh dấu.
+2. Vào **Thí nghiệm → Động lượng và va chạm**, chạy cùng bộ tham số với va chạm đàn hồi và va chạm mềm. So sánh cột Trước/Sau và phần động năng chuyển hóa.
+3. Mở **Bảo toàn cơ năng**, đặt m = 1 kg, h = 5 m, g = 10 m/s² rồi bật **Trình chiếu**. Theo dõi 50 J chuyển từ thế năng sang động năng. Vận tốc tại chân dốc là 10 m/s.
+4. Mở **Challenge Lab** để chọn nhiệm vụ. Với bài dự đoán động, nhập đáp án trước Play và kiểm tra sau mốc vật lý được yêu cầu.
+5. Chạy `pnpm build` để tạo `dist/`. Dùng `pnpm preview --base /phylab/` để thử dưới subpath. `base: './'` và hash routing tiếp tục hỗ trợ GitHub Pages và Cloudflare Pages. Cấu hình `wrangler.jsonc` dùng `dist/` khi deploy bằng Cloudflare Workers.
+
+## Giới hạn
+
+Va chạm xét chuyển động một chiều và tối đa một lần tiếp xúc giữa hai xe. Khi đồng hồ dừng ở biên ray hoặc chân dốc, số liệu giữ trạng thái ngay tại mốc quan sát. Việc kiểm chứng giao diện của đợt này thực hiện bằng Chromium, với các kích thước màn hình mô phỏng. Bản build kiểm thử chạy local.
+
+---
+
 # PHYLAB — BÀN GIAO PHASE 2A
 
 **Ngày lập** 09/11/2026

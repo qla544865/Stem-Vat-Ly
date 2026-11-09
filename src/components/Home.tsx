@@ -1,8 +1,11 @@
-import { groups } from '../simulations/catalog.ts';
-import { modelPath } from '../navigation.ts';
+import { catalog, categoryLabels, modelsIn, staticDescription } from '../simulations/catalog.ts';
+import type { Category, LabRoute } from '../simulations/catalog.ts';
+import { challengeModel, challenges } from '../challenges/config.ts';
+import { areaLabels, challengePath, modelPath } from '../navigation.ts';
+import type { Area } from '../navigation.ts';
 import Icon from './Icon';
 
-function Illustration({ kind }: { kind: string }) {
+function Illustration({ kind }: { kind: LabRoute }) {
   return (
     <svg viewBox="0 0 320 150" fill="none" className="lab-illustration" aria-hidden="true">
       <defs>
@@ -11,7 +14,7 @@ function Illustration({ kind }: { kind: string }) {
         </pattern>
       </defs>
       <rect width="320" height="150" fill={`url(#dots-${kind})`} />
-      {kind === 'spring' ? (
+      {kind === 'spring' || kind === 'hooke' ? (
         <>
           <path
             d="M48 44v65M48 80h22l8-15 12 30 12-30 12 30 12-30 12 30 12-30 12 30 12-30 12 30 8-15h24"
@@ -51,7 +54,7 @@ function Illustration({ kind }: { kind: string }) {
             θ
           </text>
         </>
-      ) : (
+      ) : kind === 'circular' ? (
         <>
           <circle cx="102" cy="72" r="43" stroke="#93bba4" strokeWidth="1.5" />
           <path d="M102 72h43M49 72h108M102 125V18M226 117h72" stroke="#bacfbe" />
@@ -64,12 +67,22 @@ function Illustration({ kind }: { kind: string }) {
             x = r cos θ
           </text>
         </>
+      ) : (
+        <g transform="translate(118 32)" color="#0b8f82">
+          <Icon name={catalog[kind].icon} size={84} />
+        </g>
       )}
     </svg>
   );
 }
 
-export default function Home() {
+const categoryIntro: Record<Area, string> = {
+  theory: 'Khám phá công thức và điều kiện cân bằng qua các minh họa tương tác.',
+  experiments: 'Điều chỉnh tham số, chạy mô phỏng và quan sát đại lượng vật lý theo thời gian.',
+  challenges: 'Vận dụng các mô hình từ Lý thuyết và Thí nghiệm để giải từng nhiệm vụ.',
+};
+
+export default function Home({ area }: { area: Area }) {
   return (
     <>
       <section className="home-hero">
@@ -103,61 +116,91 @@ export default function Home() {
         <div className="section-heading">
           <div>
             <span className="eyebrow">BẮT ĐẦU TỪ MỘT ĐIỀU TÒ MÒ</span>
-            <h2 id="choose-lab">Chọn bàn thí nghiệm của bạn</h2>
+            <h2 id="choose-lab">{areaLabels[area]}</h2>
+            <p className="area-description">{categoryIntro[area]}</p>
           </div>
-          {/* <span className="section-count">03 nhóm · 05 nội dung</span> */}
         </div>
-        <div className="home-lab-grid">
-          {groups
-            .filter((group) => group.id !== 'projectile')
-            .map((group, i) => (
-              <article className={`home-lab-card card lab-${group.id}`} key={group.id}>
-                <div className="home-card-top">
-                  <span className="experiment-icon">
-                    <Icon name={group.icon} size={22} />
-                  </span>
-                  <span>THÍ NGHIỆM 0{i + 1}</span>
-                </div>
-                <Illustration kind={group.id} />
-                <div className="home-card-content">
-                  <span className="home-subject">{group.subject}</span>
-                  <h3>{group.title}</h3>
-                  <p>{group.description}</p>
-                  <div className="lab-tags">
-                    {group.tags.map((tag) => (
-                      <span key={tag}>{tag}</span>
-                    ))}
+        {area === 'challenges' ? (
+          (Object.keys(categoryLabels) as Category[]).map((category) => (
+            <section
+              className="challenge-index"
+              key={category}
+              aria-labelledby={`challenges-${category}`}
+            >
+              <h3 id={`challenges-${category}`}>{categoryLabels[category]}</h3>
+              <div className="challenge-index-grid">
+                {challenges
+                  .filter((challenge) => catalog[challengeModel(challenge)].category === category)
+                  .map((challenge) => {
+                    const model = catalog[challengeModel(challenge)];
+                    return (
+                      <a
+                        className="challenge-index-card card"
+                        key={challenge.id}
+                        href={challengePath(challenge.id)}
+                      >
+                        <span className="experiment-icon">
+                          <Icon name={model.icon} size={20} />
+                        </span>
+                        <span>
+                          <small>{model.title}</small>
+                          <strong>{challenge.title}</strong>
+                        </span>
+                        <Icon name="arrow" size={16} />
+                      </a>
+                    );
+                  })}
+              </div>
+            </section>
+          ))
+        ) : (
+          <div className="home-lab-grid">
+            {modelsIn(area).map((id) => {
+              const item = catalog[id];
+              return (
+                <article className={`home-lab-card card lab-${id}`} key={id}>
+                  <div className="home-card-top">
+                    <span className="experiment-icon">
+                      <Icon name={item.icon} size={22} />
+                    </span>
+                    <span>{areaLabels[area].toLocaleUpperCase('vi-VN')}</span>
                   </div>
-                  <a className="open-lab-button" href={modelPath[group.model]}>
-                    Mở thí nghiệm
-                    <Icon name="arrow" size={18} />
-                  </a>
-                </div>
-              </article>
-            ))}
-        </div>
+                  <Illustration kind={id} />
+                  <div className="home-card-content">
+                    <span className="home-subject">{item.subject}</span>
+                    <h3>{item.title}</h3>
+                    <p>
+                      {item.description}
+                      {area === 'theory' && (
+                        <>
+                          <br />
+                          {staticDescription}.
+                        </>
+                      )}
+                    </p>
+                    <div className="lab-tags">
+                      {item.tags.map((tag) => (
+                        <span key={tag}>{tag}</span>
+                      ))}
+                    </div>
+                    <a className="open-lab-button" href={modelPath[id]}>
+                      {area === 'theory' ? 'Mở minh họa' : 'Mở thí nghiệm'}
+                      <Icon name="arrow" size={18} />
+                    </a>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
       </section>
-      <a className="legacy-lab card" href={modelPath.projectile}>
-        <span className="experiment-icon">
-          <Icon name="projectile" size={23} />
-        </span>
-        <div>
-          <span className="eyebrow">TIẾP TỤC KHÁM PHÁ</span>
-          <h2>Chuyển động ném ngang</h2>
-          <p>Thí nghiệm từ prototype, cùng Sandbox và hai thử thách.</p>
-        </div>
-        <span className="legacy-link">
-          Mở thí nghiệm
-          <Icon name="arrow" size={18} />
-        </span>
-      </a>
       <section className="home-guide">
         <Icon name="spark" size={22} />
         <div>
           <h2>Không chỉ xem. Hãy tự mình kiểm chứng.</h2>
           <p>
-            Trong Sandbox, bạn làm chủ mọi thông số. Sang Challenge Lab, vận dụng những gì vừa quan
-            sát để giải một nhiệm vụ nhỏ.
+            Vận dụng những gì vừa quan sát trong Lý thuyết hoặc Thí nghiệm để giải một nhiệm vụ
+            trong Challenge Lab.
           </p>
         </div>
       </section>

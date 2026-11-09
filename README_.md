@@ -1,4 +1,4 @@
-# PhyLab — giai đoạn 2A
+# PhyLab — giai đoạn 2D
 
 Phòng thí nghiệm vật lý tương tác dành cho học sinh THPT, giữ nhận diện **STEM vật lý 11C5**. React + TypeScript + Vite, Canvas 2D và SVG. Không backend, tài khoản, API hay physics engine bên ngoài.
 
@@ -23,21 +23,28 @@ pnpm format       # Định dạng source bằng Prettier
 pnpm format:check # Kiểm tra định dạng
 ```
 
-## Các thí nghiệm
+## Khu vực học tập
 
-Trang chủ có bốn nhóm chính và một lối vào thí nghiệm ném ngang cũ. Mỗi thí nghiệm mở ở Sandbox, không reload trang khi đổi nội dung/chế độ.
+Thanh điều hướng chia nội dung thành ba khu vực. Các liên kết mở trong cùng ứng dụng và giữ tương thích với các hash cũ, kể cả `#/spring` và `#/spring/hooke`.
 
-| Nhóm                | Nội dung                                                          | Đồ thị                  |
-| ------------------- | ----------------------------------------------------------------- | ----------------------- |
-| Lò xo               | Hooke tĩnh: giãn/nén, ngoại lực và lực đàn hồi                    | F–Δl, điểm đo hiện tại  |
-| Lò xo               | Dao động điều hòa, pha ban đầu, vector v/a                        | Chọn x(t), v(t), a(t)   |
-| Moment lực          | Hai lực hướng xuống, cánh tay đòn, cân bằng và xu hướng quay      | So sánh M₁, M₂ theo N·m |
-| Chuyển động tròn    | Quỹ đạo, vector tiếp tuyến/hướng tâm, hình chiếu dao động đồng bộ | x(t) của hình chiếu     |
-| Con lắc đơn         | Sandbox và ba khảo sát có phép đo 10 dao động                     | T–A, T–m, T–l, T²–l     |
-| Ném ngang (giữ lại) | Quỹ đạo parabol, thời gian rơi, tầm xa                            | y(t)                    |
+- **Lý thuyết** (`#/theory`) có Hooke, moment lực và công của lực. Mỗi minh họa cập nhật ngay khi đổi tham số.
+- **Thí nghiệm** (`#/experiments`) có dao động lò xo, chuyển động tròn và hình chiếu, ném ngang, con lắc đơn, va chạm và bảo toàn cơ năng. Mỗi mô hình mở ở Sandbox. Con lắc đơn còn có ba bài thực hành đo đạc.
+- **Challenge Lab** (`#/challenges`) mở thử thách từ cả hai nhóm. Từng bài có đường dẫn `#/challenges/<id>` và dùng lại mô hình tương ứng.
 
-- **Hooke và moment là mô hình tĩnh:** kéo slider để nhận phản hồi ngay; không có nút Play hoặc thanh quay giả lập.
-- **Lò xo dao động, tròn, ném ngang:** Play/Pause/Resume/Reset, tốc độ 0.5×/1×/2×. Reset giữ tham số; Khôi phục thông số trả về bộ mặc định.
+| Nhóm                | Nội dung                                                          | Đồ thị                                          |
+| ------------------- | ----------------------------------------------------------------- | ----------------------------------------------- |
+| Lò xo               | Hooke tĩnh: giãn/nén, ngoại lực và lực đàn hồi                    | F–Δl, điểm đo hiện tại                          |
+| Lò xo               | Dao động điều hòa, pha ban đầu, vector v/a                        | Chọn x(t), v(t), a(t)                           |
+| Moment lực          | Hai lực hướng xuống, cánh tay đòn, cân bằng và xu hướng quay      | So sánh M₁, M₂ theo N·m                         |
+| Chuyển động tròn    | Quỹ đạo, vector tiếp tuyến/hướng tâm, hình chiếu dao động đồng bộ | x(t) của hình chiếu                             |
+| Con lắc đơn         | Sandbox và ba khảo sát có phép đo 10 dao động                     | T–A, T–m, T–l, T²–l                             |
+| Ném ngang (giữ lại) | Quỹ đạo parabol, thời gian rơi, tầm xa                            | y(t)                                            |
+| Va chạm             | Hai xe trên ray một chiều, va chạm đàn hồi hoặc mềm               | Bảng vận tốc, động lượng và động năng trước/sau |
+| Công của lực        | Minh họa tĩnh về lực, độ dời, góc và dấu của công                 | Công thức và giá trị A theo J                   |
+| Bảo toàn cơ năng    | Vật thả từ nghỉ trên mặt phẳng nghiêng                            | Thanh động năng, thế năng và cơ năng theo J     |
+
+- **Hooke, moment và công của lực** có nhãn “Minh họa tương tác, thay đổi thông số để quan sát kết quả”. Dùng slider và nút Khôi phục thông số để so sánh các trường hợp.
+- **Mô phỏng động** có Play/Pause/Resume/Reset, tốc độ 0.5×/1×/2× và chế độ Trình chiếu. Reset giữ tham số. Khôi phục thông số trả về bộ mặc định.
 - Thay tham số của mô hình động đưa về t = 0 và Pause. Đổi nhóm/nội dung dọn vòng animation cũ và mở Sandbox mới.
 - Vector vận tốc và gia tốc bật/tắt độc lập; chú thích có công tắc riêng. Vector được scale theo bộ thông số/khung vẽ để dễ nhìn; giá trị vật lý vẫn theo SI. Vector vận tốc lò xo không bị cắt ngưỡng gây bão hòa ở gần vị trí cân bằng.
 - Góc và pha điều chỉnh bằng độ ở UI, chuyển sang radian trước khi tính toán. Công thức và bảng đọc luôn ghi rõ đơn vị.
@@ -66,12 +73,15 @@ Phép đo dùng thời gian vật lý. Tốc độ 2× rút ngắn thời gian c
 - **Tròn:** ω > 0, quay ngược chiều kim đồng hồ; x sang phải, y hướng lên. θ = ωt + φ; v = ωr; aₕₜ = ω²r; Fₕₜ = mω²r. Khung hình chiếu bên phải có gốc được dịch sang phải, cùng chiều dương x, cùng t và φ. A = r.
 - **Ném ngang:** bỏ qua sức cản; g hằng số. Gốc tại vị trí ném, y hướng xuống. Thời gian dừng chính xác tại √(2h/g); vật không xuyên qua đất. Canvas tự scale theo chiều cao, tầm xa và mục tiêu.
 - **Con lắc đơn:** chất điểm, dây nhẹ không dãn, chuyển động phẳng trong trọng trường đều, bỏ qua lực cản. Solver RK4 bước 1/240 s giải θ″ + (g/l) sin θ = 0. Mỗi chu kỳ kết thúc khi vật trở lại biên phía thả. Đồng hồ nội suy lần thứ 10 và tính T đo = t₁₀/10. T₀ = 2π√(l/g) là gần đúng góc nhỏ.
+- **Va chạm** xét hai xe dài 1,2 m trên ray ngang dài 20 m. Chiều dương sang phải và bỏ qua ngoại lực theo ray. Với v₁ > v₂, hai mép tiếp xúc sau thời gian `(x₂ − x₁ − 1,2)/(v₁ − v₂)`. Va chạm đàn hồi đảo dấu vận tốc tương đối trong hệ khối tâm. Va chạm mềm cho cả hai xe vận tốc chung `P/(m₁+m₂)`. Dừng quan sát ở 10 s hoặc khi một xe tới biên ray.
+- **Công của lực** tính `A = Fs cos α` cho một lực không đổi và độ dời cho trước. Hệ số cos ở 90° được xử lý về 0. F = 0 hoặc s = 0 cũng cho A = 0.
+- **Bảo toàn cơ năng** dùng dốc cố định không ma sát và chọn chân dốc làm mốc thế năng. Giải theo thời gian với `a = g sin β`, `s = at²/2` và `L = h/sin β`. Đồng hồ dừng ở `t = √(2L/a)`, khi vật tới chân dốc với tốc độ `√(2gh)`. Thanh năng lượng so sánh `½mv²`, `mgy` và tổng của chúng.
 
 Mọi hàm physics kiểm tra tính hữu hạn và các điều kiện dấu phù hợp. Ứng dụng không cần Internet để tính hoặc chạy thí nghiệm sau khi tải frontend; Google Fonts là tài nguyên trình bày tùy chọn, có font hệ thống dự phòng.
 
 ## Challenge Lab
 
-Có **8 thử thách**, dùng cùng physics/rendering với Sandbox:
+Có **15 thử thách**, dùng chung mô hình vật lý với khu vực Lý thuyết và Thí nghiệm.
 
 | Thử thách                     | Thao tác                                    | Điều kiện hoàn thành                                 |
 | ----------------------------- | ------------------------------------------- | ---------------------------------------------------- |
@@ -83,6 +93,13 @@ Có **8 thử thách**, dùng cùng physics/rendering với Sandbox:
 | Dự đoán hình chiếu            | Chọn đáp án trước khi chạy từ φ = 0         | Tự dừng ở T/4; chọn x = 0                            |
 | Bắn trúng mục tiêu (giữ lại)  | Chỉnh v₀, chạy đến khi chạm đất             | Tầm xa cách 18 m không quá 0,50 m                    |
 | Dự đoán tầm xa (giữ lại)      | Nhập đáp án trước khi chạy                  | Sai lệch ≤ 0,50 m; kiểm tra sau khi chạm đất         |
+| Dự đoán vận tốc sau va chạm   | Nhập vận tốc có dấu của xe A rồi chạy       | Sai lệch ≤ 0,05 m/s, kiểm tra sau tiếp xúc           |
+| Hai xe cùng đứng yên          | Chỉnh vận tốc hai xe trong va chạm mềm      | Vận tốc chung có độ lớn ≤ 0,05 m/s sau tiếp xúc      |
+| Đại lượng nào được bảo toàn?  | Chọn đại lượng và chạy va chạm mềm          | Chọn tổng động lượng và quan sát tiếp xúc            |
+| Tạo công 100 J                | Chỉnh F, s và α                             | Công dương 100 J ± 0,5 J                             |
+| Phân loại công của lực        | Chọn dấu công ở 30°, 90° và 150°            | Cả ba dấu đúng                                       |
+| Tìm độ cao để đạt 10 m/s      | Chỉnh h và chạy tới chân dốc                | Tốc độ 10 m/s ± 0,05 m/s                             |
+| Dự đoán sự chuyển hóa cơ năng | Chọn dự đoán và chạy tới chân dốc           | Động năng tăng, thế năng giảm, cơ năng giữ nguyên    |
 
 Mỗi bài có gợi ý, giải thích, thông báo đúng/sai và Thử lại. Bài dự đoán khóa câu trả lời sau khi chạy, Reset/Thử lại cho phép dự đoán lại. Đáp án không được tự xác nhận ngay lúc mở bài. Độ cứng bí mật bị ẩn ở slider, Canvas và số liệu; đồ thị không cho dữ kiện suy k ở F = 0. Bài dự đoán tầm xa ẩn kết quả và đồ thị cho đến khi chạm đất.
 

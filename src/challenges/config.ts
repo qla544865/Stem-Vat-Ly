@@ -4,10 +4,29 @@ import type { HookeParams } from '../simulations/spring/hooke.ts';
 import type { TorqueParams } from '../simulations/torque/physics.ts';
 import type { CircularParams } from '../simulations/circular/physics.ts';
 import type { Model } from '../simulations/catalog.ts';
+import { collisionDefaults } from '../simulations/collision/physics.ts';
+import type { CollisionParams } from '../simulations/collision/physics.ts';
+import { energyDefaults, workDefaults, workState } from '../simulations/energy/physics.ts';
+import type { EnergyParams, WorkParams } from '../simulations/energy/physics.ts';
 
-export type Experiment = 'spring' | 'projectile' | 'torque' | 'circular';
+export type Experiment =
+  'spring' | 'projectile' | 'torque' | 'circular' | 'collision' | 'work' | 'energy';
 export type ChallengeId =
-  'period' | 'mass' | 'target' | 'predict' | 'secret' | 'balance' | 'centripetal' | 'projection';
+  | 'period'
+  | 'mass'
+  | 'target'
+  | 'predict'
+  | 'secret'
+  | 'balance'
+  | 'centripetal'
+  | 'projection'
+  | 'collision-predict'
+  | 'collision-stop'
+  | 'collision-conserve'
+  | 'work-target'
+  | 'work-signs'
+  | 'energy-height'
+  | 'energy-predict';
 export interface Challenge {
   id: ChallengeId;
   experiment: Experiment;
@@ -17,12 +36,35 @@ export interface Challenge {
   hint: string;
   explanation: string;
   editable: string[];
-  initial: SpringParams | ProjectileParams | HookeParams | TorqueParams | CircularParams;
+  initial:
+    | SpringParams
+    | ProjectileParams
+    | HookeParams
+    | TorqueParams
+    | CircularParams
+    | CollisionParams
+    | WorkParams
+    | EnergyParams;
   target: number;
   tolerance: number;
   goalLabel?: string;
   goalDisplay?: string;
-  answer?: { label: string; unit?: string; choices?: { value: string; label: string }[] };
+  answer?: {
+    label: string;
+    unit?: string;
+    min?: number;
+    choices?: { value: string; label: string }[];
+  };
+}
+
+export const workAngles = [30, 90, 150];
+
+export function workSignScore(answers: readonly (number | undefined)[]) {
+  return workAngles.filter(
+    (angle, index) =>
+      workState({ force: 10, displacement: 5, alpha: (angle * Math.PI) / 180 }).sign ===
+      answers[index],
+  ).length;
 }
 export const challenges: Challenge[] = [
   {
@@ -153,6 +195,131 @@ export const challenges: Challenge[] = [
     target: 8 * Math.sqrt(40 / 9.81),
     tolerance: 0.5,
   },
+  {
+    id: 'collision-predict',
+    experiment: 'collision',
+    title: 'Dự đoán vận tốc sau va chạm',
+    description:
+      'Xe A (1 kg) chạy sang phải với 2 m/s, xe B (2 kg) đứng yên. Dự đoán vận tốc có dấu của A sau va chạm đàn hồi rồi chạy để kiểm chứng.',
+    hint: 'Dùng cả bảo toàn động lượng và điều kiện vận tốc tương đối đảo chiều sau va chạm đàn hồi.',
+    explanation:
+      'Xe A bật lại với v₁′ = −2/3 m/s. Xe B đi sang phải và tổng động lượng của hai xe giữ nguyên.',
+    editable: [],
+    initial: { ...collisionDefaults, m2: 2, v1: 2, v2: 0 },
+    target: -2 / 3,
+    tolerance: 0.05,
+    goalLabel: 'DỰ ĐOÁN CÓ DẤU',
+    goalDisplay: 'v₁′ = ?',
+    answer: { label: 'Vận tốc xe A sau va chạm', unit: 'm/s', min: -100 },
+  },
+  {
+    id: 'collision-stop',
+    experiment: 'collision',
+    title: 'Hai xe cùng đứng yên',
+    description:
+      'Chỉnh vận tốc hai xe chạy ngược chiều sao cho chúng dính lại và đứng yên sau va chạm mềm.',
+    hint: 'Để vận tốc chung bằng 0, hai động lượng ban đầu phải cùng độ lớn và ngược dấu.',
+    explanation:
+      'Ở va chạm mềm, (m₁ + m₂)v′ = m₁v₁ + m₂v₂. Tổng động lượng bằng 0 cho vận tốc chung bằng 0.',
+    editable: ['v1', 'v2'],
+    initial: { ...collisionDefaults, m2: 2, kind: 'inelastic' },
+    target: 0,
+    tolerance: 0.05,
+    goalLabel: 'SAU VA CHẠM MỀM',
+    goalDisplay: '|v′| ≤ 0,05 m/s',
+  },
+  {
+    id: 'collision-conserve',
+    experiment: 'collision',
+    title: 'Đại lượng nào được bảo toàn?',
+    description:
+      'Dự đoán đại lượng được bảo toàn khi hai xe này va chạm mềm, rồi quan sát bảng trước và sau.',
+    hint: 'Hệ hai xe không chịu ngoại lực theo phương ngang. Hai xe dính lại sau va chạm.',
+    explanation:
+      'Tổng động lượng được bảo toàn. Động năng giảm và chuyển hóa sang các dạng năng lượng khác.',
+    editable: [],
+    initial: { ...collisionDefaults, kind: 'inelastic' },
+    target: 0,
+    tolerance: 1e-8,
+    goalLabel: 'VA CHẠM MỀM',
+    goalDisplay: 'So sánh trước / sau',
+    answer: {
+      label: 'Đại lượng được bảo toàn',
+      choices: [
+        { value: '1', label: 'Tổng động lượng' },
+        { value: '2', label: 'Tổng động năng' },
+        { value: '3', label: 'Vận tốc từng xe' },
+      ],
+    },
+  },
+  {
+    id: 'work-target',
+    experiment: 'work',
+    title: 'Tạo công 100 J',
+    description: 'Điều chỉnh lực, độ dời và góc để lực thực hiện công dương 100 J.',
+    hint: 'Khi lực cùng hướng độ dời, cos α = 1. Bạn cũng có thể tìm một nghiệm với góc nhọn.',
+    explanation:
+      'Công chỉ phụ thuộc vào thành phần lực theo hướng độ dời. Ví dụ 20 N cùng hướng độ dời 5 m cho 100 J.',
+    editable: ['force', 'displacement', 'alpha'],
+    initial: { ...workDefaults },
+    target: 100,
+    tolerance: 0.5,
+    goalLabel: 'CÔNG MỤC TIÊU',
+    goalDisplay: '100 J',
+  },
+  {
+    id: 'work-signs',
+    experiment: 'work',
+    title: 'Phân loại công của lực',
+    description:
+      'Cùng một lực 10 N và độ dời 5 m. Hãy xác định dấu của công trong cả ba tình huống.',
+    hint: 'So sánh từng góc với 90°. Với F và s dương, dấu của công theo dấu của cos α.',
+    explanation: 'Góc 30° cho công dương, 90° cho công bằng 0 và 150° cho công âm.',
+    editable: [],
+    initial: { ...workDefaults },
+    target: workAngles.length,
+    tolerance: 0,
+    goalLabel: 'BA TÌNH HUỐNG',
+    goalDisplay: '30° · 90° · 150°',
+  },
+  {
+    id: 'energy-height',
+    experiment: 'energy',
+    title: 'Tìm độ cao để đạt 10 m/s',
+    description:
+      'Chỉnh độ cao thả vật để vận tốc tại chân dốc đạt 10 m/s. Dốc không ma sát và g = 10 m/s².',
+    hint: 'Đặt mgh = ½mv² tại chân dốc và giải theo h.',
+    explanation: 'Độ cao 5 m cho v = √(2gh) = 10 m/s. Khối lượng và góc dốc không đổi kết quả này.',
+    editable: ['h'],
+    initial: { ...energyDefaults },
+    target: 10,
+    tolerance: 0.05,
+    goalLabel: 'VẬN TỐC CHÂN DỐC',
+    goalDisplay: '10 m/s',
+  },
+  {
+    id: 'energy-predict',
+    experiment: 'energy',
+    title: 'Dự đoán sự chuyển hóa cơ năng',
+    description:
+      'Chọn cách động năng, thế năng và tổng cơ năng biến đổi khi vật trượt xuống dốc không ma sát. Sau đó chạy để kiểm chứng.',
+    hint: 'Vật thấp dần và nhanh dần. Trọng lực làm thế năng chuyển hóa thành động năng.',
+    explanation: 'Động năng tăng, thế năng giảm cùng lượng và tổng cơ năng giữ nguyên.',
+    editable: [],
+    initial: { ...energyDefaults, h: 5 },
+    target: 0,
+    tolerance: 1e-8,
+    goalLabel: 'DỰ ĐOÁN NĂNG LƯỢNG',
+    goalDisplay: 'Eₖ + Eₚ',
+    answer: {
+      label: 'Dự đoán của bạn',
+      choices: [
+        { value: '1', label: 'Động năng tăng, thế năng giảm, cơ năng không đổi' },
+        { value: '2', label: 'Động năng và thế năng đều không đổi' },
+        { value: '3', label: 'Động năng tăng và cơ năng cũng tăng' },
+      ],
+    },
+  },
 ];
 
 export function validateChallenge(c: Challenge, actual: number, prediction?: number) {
@@ -160,15 +327,24 @@ export function validateChallenge(c: Challenge, actual: number, prediction?: num
   const within = (difference: number) => Math.abs(difference) <= c.tolerance + 1e-9;
   if (c.id === 'mass')
     return Number.isFinite(prediction) && prediction === 2 && within(actual - c.target);
-  if (c.id === 'predict' || c.id === 'secret')
+  if (c.id === 'predict' || c.id === 'secret' || c.id === 'collision-predict')
     return Number.isFinite(prediction) && within(prediction! - actual);
   if (c.id === 'projection') return prediction === 0 && within(actual - c.target);
+  if (c.id === 'collision-conserve' || c.id === 'energy-predict')
+    return prediction === 1 && within(actual - c.target);
   return within(actual - c.target);
 }
 
 export const challengeModel = (c: Challenge): Model => c.model ?? c.experiment;
 export const predictionBeforeRun = (c: Challenge) =>
-  ['mass', 'predict', 'projection'].includes(c.id);
+  [
+    'mass',
+    'predict',
+    'projection',
+    'collision-predict',
+    'collision-conserve',
+    'energy-predict',
+  ].includes(c.id);
 
 export interface AttemptEvidence {
   interacted: boolean;
@@ -177,14 +353,20 @@ export interface AttemptEvidence {
   completed: boolean;
   nonzeroForce: boolean;
   answer?: number;
+  collided?: boolean;
+  classified?: boolean;
 }
 
 export function canCheckChallenge(c: Challenge, e: AttemptEvidence) {
   const answered = Number.isFinite(e.answer);
   if (c.id === 'secret') return e.interacted && e.nonzeroForce && answered && e.answer! > 0;
   if (c.id === 'balance') return e.interacted;
+  if (c.id === 'work-target') return e.interacted;
+  if (c.id === 'work-signs') return e.classified === true;
   if (!e.hasRun || e.time <= 0) return false;
   if (predictionBeforeRun(c) && !answered) return false;
-  if (['target', 'predict', 'projection'].includes(c.id)) return e.completed;
+  if (c.experiment === 'collision') return e.collided === true;
+  if (c.experiment === 'energy' || ['target', 'predict', 'projection'].includes(c.id))
+    return e.completed;
   return true;
 }

@@ -2,12 +2,15 @@ import { useCallback, useEffect, useRef } from 'react';
 import type { ComponentPropsWithoutRef } from 'react';
 import type { DisplayOptions, SimulationConfig } from '../simulations/catalog.ts';
 import type { SubscribeFrame } from '../simulations/useSimulation.ts';
-import { modelTitles } from '../simulations/catalog.ts';
+import { catalog, isDynamic } from '../simulations/catalog.ts';
 import { drawSpring } from '../simulations/spring/renderer.ts';
 import { drawHooke } from '../simulations/spring/hookeRenderer.ts';
 import { drawTorque } from '../simulations/torque/renderer.ts';
 import { drawCircular } from '../simulations/circular/renderer.ts';
 import { drawProjectile } from '../simulations/projectile/renderer.ts';
+import { drawCollision } from '../simulations/collision/renderer.ts';
+import type { CollisionPlan } from '../simulations/collision/physics.ts';
+import { drawEnergy, drawWork } from '../simulations/energy/renderer.ts';
 
 interface Props {
   config: SimulationConfig;
@@ -17,10 +20,11 @@ interface Props {
   secret: boolean;
   target?: number;
   revealRange: boolean;
+  collision?: CollisionPlan;
 }
 
 export default function SimulationCanvas(props: Props) {
-  const { config, display, getTime, secret, target, revealRange } = props;
+  const { config, display, getTime, secret, target, revealRange, collision } = props;
   const draw = useCallback(
     (ctx: CanvasRenderingContext2D, width: number, height: number) => {
       const t = getTime();
@@ -58,15 +62,25 @@ export default function SimulationCanvas(props: Props) {
             revealRange,
           );
           break;
+        case 'collision':
+          if (collision)
+            drawCollision(ctx, width, height, collision, t, display.velocity, display.annotations);
+          break;
+        case 'work':
+          drawWork(ctx, width, height, config.params, display.annotations);
+          break;
+        case 'energy':
+          drawEnergy(ctx, width, height, config.params, t, display.velocity, display.annotations);
+          break;
       }
     },
-    [config, display, getTime, secret, target, revealRange],
+    [config, display, getTime, secret, target, revealRange, collision],
   );
   return (
     <CanvasSurface
       draw={draw}
       subscribe={props.subscribe}
-      aria-label={`Mô phỏng ${modelTitles[config.kind]}. Các giá trị vật lý được hiển thị ngay bên dưới.`}
+      aria-label={`${isDynamic(config.kind) ? 'Mô phỏng' : 'Minh họa'} ${catalog[config.kind].title}. Các giá trị vật lý được hiển thị ngay bên dưới.`}
     />
   );
 }

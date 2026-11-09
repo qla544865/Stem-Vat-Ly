@@ -7,6 +7,9 @@ export type IconName =
   | 'circular'
   | 'pendulum'
   | 'screen'
+  | 'collision'
+  | 'work'
+  | 'energy'
   | 'back'
   | 'home'
   | 'play'
@@ -28,6 +31,9 @@ const paths: Record<IconName, string> = {
   circular: 'M20 12a8 8 0 1 1-8-8M15 4h5v5M12 12l6-6M13 12a1 1 0 1 1-2 0 1 1 0 0 1 2 0',
   pendulum: 'M7 3h10M12 3l5 10M12 5v11M5 16a10 10 0 0 0 14 2M20 15a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z',
   screen: 'M3 4h18v13H3zM12 17v3m-4 1h8',
+  collision: 'M2 9h7v7H2zM15 9h7v7h-7zM11 4h2m-1 1V2M4 19h3m10 0h3M11 12h2',
+  work: 'M3 15h6v5H3zM6 15l10-9m-5 0h5v5M11 19h10m-3-3 3 3-3 3',
+  energy: 'M3 4v16h18L3 4Zm8 5 4 4m-4 0h4V9M6 16v2',
   back: 'M19 12H5m6-6-6 6 6 6',
   home: 'm3 10 9-7 9 7M5 9v12h14V9M9 21v-8h6v8',
   play: 'm9 5 11 7-11 7V5Z',

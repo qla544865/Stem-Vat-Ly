@@ -3,15 +3,26 @@ import Home from './components/Home';
 import LabWorkspace from './components/LabWorkspace';
 import PendulumLab from './components/PendulumLab';
 import Icon from './components/Icon';
-import { modelFromHash } from './navigation.ts';
+import {
+  areaFromHash,
+  areaLabels,
+  areaPath,
+  challengeFromHash,
+  modelFromHash,
+} from './navigation.ts';
+import type { Area } from './navigation.ts';
+import { catalog } from './simulations/catalog.ts';
 import { emptyPendulumNotebook } from './simulations/pendulum/experiment.ts';
 
 export default function App() {
-  const [model, setModel] = useState(() => modelFromHash(window.location.hash));
+  const [hash, setHash] = useState(() => window.location.hash);
+  const model = modelFromHash(hash);
+  const challenge = challengeFromHash(hash);
+  const area = challenge ? 'challenges' : model ? catalog[model].category : areaFromHash(hash);
   const [pendulumNotebook, setPendulumNotebook] = useState(emptyPendulumNotebook);
   useEffect(() => {
     const navigate = () => {
-      setModel(modelFromHash(window.location.hash));
+      setHash(window.location.hash);
       window.scrollTo({ top: 0, behavior: 'instant' });
     };
     window.addEventListener('hashchange', navigate);
@@ -32,23 +43,26 @@ export default function App() {
           </a>
           <span className="brand-divider" />
           <span className="brand-description">STEM VẬT LÝ 11C5</span>
-          <a className="header-home-link" href="#/">
-            <Icon name="home" size={16} />
-            Phòng thí nghiệm
-          </a>
-          <span className="prototype-badge">
-            <span />
-            Giai đoạn 02A
-          </span>
+          <nav className="header-sections" aria-label="Khu vực học tập">
+            {(Object.keys(areaLabels) as Area[]).map((item) => (
+              <a
+                key={item}
+                href={areaPath[item]}
+                aria-current={area === item ? (model ? 'location' : 'page') : undefined}
+              >
+                {areaLabels[item]}
+              </a>
+            ))}
+          </nav>
         </div>
       </header>
       <main className={`workspace ${model ? 'lab-workspace' : 'home-workspace'}`}>
         {model === 'pendulum' ? (
           <PendulumLab notebook={pendulumNotebook} setNotebook={setPendulumNotebook} />
         ) : model ? (
-          <LabWorkspace key={model} model={model} />
+          <LabWorkspace key={model} model={model} challenge={challenge} />
         ) : (
-          <Home />
+          <Home area={area} />
         )}
         <footer>
           <span className="footer-brand">

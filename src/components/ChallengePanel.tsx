@@ -1,6 +1,6 @@
 import type { Challenge } from '../challenges/config.ts';
 import Icon from './Icon';
-import { predictionBeforeRun } from '../challenges/config.ts';
+import { predictionBeforeRun, workAngles } from '../challenges/config.ts';
 
 interface Props {
   challenge: Challenge;
@@ -18,6 +18,8 @@ interface Props {
   actual: number;
   baseline: number;
   progressMessage: string;
+  classifications: (number | undefined)[];
+  onClassify: (index: number, value: number | undefined) => void;
 }
 export default function ChallengePanel(p: Props) {
   const c = p.challenge;
@@ -87,17 +89,39 @@ export default function ChallengePanel(p: Props) {
               <input
                 id="challenge-answer"
                 type="number"
-                min="0.01"
+                min={c.answer.min ?? 0.01}
                 max="10000"
                 step="0.01"
                 placeholder="Nhập kết quả"
                 value={p.prediction}
+                disabled={p.hasRun && predictionBeforeRun(c)}
                 onChange={(e) => p.onPrediction(e.target.value)}
               />
               <span>{c.answer.unit}</span>
             </div>
           )}
         </div>
+      )}
+      {c.id === 'work-signs' && (
+        <fieldset className="work-classifications">
+          <legend>Dấu của công trong từng tình huống</legend>
+          {workAngles.map((angle, index) => (
+            <label key={angle}>
+              Góc {angle}°
+              <select
+                value={p.classifications[index] ?? ''}
+                onChange={(e) =>
+                  p.onClassify(index, e.target.value === '' ? undefined : Number(e.target.value))
+                }
+              >
+                <option value="">Chọn dấu…</option>
+                <option value="1">Công dương</option>
+                <option value="0">Công bằng 0</option>
+                <option value="-1">Công âm</option>
+              </select>
+            </label>
+          ))}
+        </fieldset>
       )}
       {c.id === 'mass' && (
         <div className="prediction-row">
