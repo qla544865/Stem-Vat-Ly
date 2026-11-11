@@ -264,9 +264,24 @@ describe('Challenge và phân loại Phase 2D', () => {
     assert.equal(validateChallenge(challenge('energy-height'), 9.9), false);
   });
 
-  it('catalog phân loại ba minh họa tĩnh, sáu thí nghiệm và giữ các hash cũ', () => {
-    assert.deepEqual(modelsIn('theory'), ['hooke', 'torque', 'work']);
-    assert.equal(modelsIn('experiments').length, 6);
+  it('catalog giữ đủ mô hình Phase 1–2 và phân loại cả mô hình Phase 3', () => {
+    assert.deepEqual(modelsIn('theory'), [
+      'hooke',
+      'torque',
+      'work',
+      'forces',
+      'power',
+      'efficiency',
+    ]);
+    assert.deepEqual(modelsIn('experiments'), [
+      'spring',
+      'circular',
+      'pendulum',
+      'projectile',
+      'collision',
+      'energy',
+      'oscillator',
+    ]);
     assert.equal(isDynamic('work'), false);
     assert.equal(isDynamic('pendulum'), true);
     assert.equal(modelFromHash('#/spring'), 'hooke');
@@ -276,9 +291,27 @@ describe('Challenge và phân loại Phase 2D', () => {
     assert.equal(areaFromHash(areaPath.challenges), 'challenges');
   });
 
-  it('15 thử thách có deep link duy nhất và chưa bài nào đủ điều kiện lúc mở', () => {
-    assert.equal(challenges.length, 15);
-    assert.equal(new Set(challenges.map(({ id }) => id)).size, 15);
+  it('giữ đủ 15 ID cũ và 21 deep link duy nhất, chưa bài nào đủ điều kiện lúc mở', () => {
+    for (const id of [
+      'secret',
+      'period',
+      'mass',
+      'balance',
+      'centripetal',
+      'projection',
+      'target',
+      'predict',
+      'collision-predict',
+      'collision-stop',
+      'collision-conserve',
+      'work-target',
+      'work-signs',
+      'energy-height',
+      'energy-predict',
+    ])
+      assert.equal(challengeFromHash(`#/challenges/${id}`)?.id, id);
+    assert.equal(challenges.length, 21);
+    assert.equal(new Set(challenges.map(({ id }) => id)).size, 21);
     for (const c of challenges) {
       assert.equal(challengeFromHash(challengePath(c.id)), c);
       assert.equal(modelFromHash(challengePath(c.id)), challengeModel(c));

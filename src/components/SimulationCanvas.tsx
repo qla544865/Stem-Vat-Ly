@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import type { ComponentPropsWithoutRef } from 'react';
 import type { DisplayOptions, SimulationConfig } from '../simulations/catalog.ts';
 import type { SubscribeFrame } from '../simulations/useSimulation.ts';
@@ -11,6 +11,10 @@ import { drawProjectile } from '../simulations/projectile/renderer.ts';
 import { drawCollision } from '../simulations/collision/renderer.ts';
 import type { CollisionPlan } from '../simulations/collision/physics.ts';
 import { drawEnergy, drawWork } from '../simulations/energy/renderer.ts';
+import type { Oscillator } from '../simulations/oscillator/physics.ts';
+import { oscillatorObservationTime } from '../simulations/oscillator/physics.ts';
+import { drawOscillator } from '../simulations/oscillator/renderer.ts';
+import { drawEfficiency, drawForces, drawPower } from '../simulations/interactive/renderer.ts';
 
 interface Props {
   config: SimulationConfig;
@@ -21,10 +25,30 @@ interface Props {
   target?: number;
   revealRange: boolean;
   collision?: CollisionPlan;
+  oscillator?: Oscillator;
+  observationEnd?: number;
 }
 
 export default function SimulationCanvas(props: Props) {
-  const { config, display, getTime, secret, target, revealRange, collision } = props;
+  const {
+    config,
+    display,
+    getTime,
+    secret,
+    target,
+    revealRange,
+    collision,
+    oscillator,
+    observationEnd,
+  } = props;
+  const oscillatorExtent = useMemo(() => {
+    if (!oscillator) return 1;
+    let extent = 0.15;
+    const end = observationEnd ?? oscillatorObservationTime;
+    for (let i = 0; i <= 720; i++)
+      extent = Math.max(extent, Math.abs(oscillator.state((end * i) / 720).x));
+    return extent * 1.1;
+  }, [oscillator, observationEnd]);
   const draw = useCallback(
     (ctx: CanvasRenderingContext2D, width: number, height: number) => {
       const t = getTime();
@@ -72,9 +96,46 @@ export default function SimulationCanvas(props: Props) {
         case 'energy':
           drawEnergy(ctx, width, height, config.params, t, display.velocity, display.annotations);
           break;
+        case 'oscillator':
+          if (oscillator)
+            drawOscillator(
+              ctx,
+              width,
+              height,
+              oscillator.state(t),
+              oscillatorExtent,
+              display.annotations,
+            );
+          break;
+        case 'forces':
+          drawForces(
+            ctx,
+            width,
+            height,
+            config.params,
+            Boolean(display.components),
+            display.annotations,
+          );
+          break;
+        case 'power':
+          drawPower(ctx, width, height, config.params);
+          break;
+        case 'efficiency':
+          drawEfficiency(ctx, width, height, config.params);
+          break;
       }
     },
-    [config, display, getTime, secret, target, revealRange, collision],
+    [
+      config,
+      display,
+      getTime,
+      secret,
+      target,
+      revealRange,
+      collision,
+      oscillator,
+      oscillatorExtent,
+    ],
   );
   return (
     <CanvasSurface
@@ -98,25 +159,31 @@ export function CanvasSurface({ draw, subscribe, ...canvasProps }: CanvasProps) 
 
   useEffect(() => {
     const canvas = canvasRef.current!;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    let { width, height } = canvas.getBoundingClientRect();
     const draw = () => {
-      const { width, height } = canvas.getBoundingClientRect();
       if (!width || !height) return;
       const dpr = window.devicePixelRatio || 1;
       if (canvas.width !== Math.round(width * dpr) || canvas.height !== Math.round(height * dpr)) {
         canvas.width = Math.round(width * dpr);
         canvas.height = Math.round(height * dpr);
       }
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, width, height);
       latest.current(ctx, width, height);
     };
     render.current = draw;
-    const observer = new ResizeObserver(draw);
+    const observer = new ResizeObserver(([entry]) => {
+      ({ width, height } = entry.contentRect);
+      draw();
+    });
     observer.observe(canvas);
     draw();
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      render.current = () => {};
+    };
   }, []);
 
   useEffect(() => subscribe(() => render.current()), [subscribe]);

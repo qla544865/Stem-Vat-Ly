@@ -1,3 +1,82 @@
+# PHYLAB — BÀN GIAO PHASE 3
+
+**Ngày lập** 10/11/2026
+
+## Phạm vi đã triển khai
+
+- **3A** thêm bàn `#/oscillator` với ba chế độ Tắt dần, Cưỡng bức, Cộng hưởng. Canvas vẽ hệ lò xo ngang, vị trí cân bằng, li độ và ba lực có dấu. Đồ thị dùng chung thời gian với Canvas và bảng số liệu.
+- **3B** thêm ba minh họa trong Lý thuyết tại `#/forces`, `#/power` và `#/efficiency`. Các minh họa cập nhật từ slider ngay khi đổi tham số.
+- **3C** bổ sung sáu bài, nâng tổng số lên 21 và giữ 15 ID cùng các hash cũ. Challenge Lab phân loại Đạt mục tiêu, Dự đoán và Điều tra. Bài mới có ba cấp gợi ý, bài cũ tiếp tục hỗ trợ một cấp. Kết quả chấm giữ số đo tại lúc kiểm tra, kèm mục tiêu, công thức và giải thích. Thử lại tạo một lượt mới.
+- **3D** rà công thức, biên slider, renderer, đồ thị, điều hướng, luồng trạng thái và thời gian. Canvas dùng kích thước do `ResizeObserver` cập nhật. Đồ thị tĩnh và đồ thị đang ẩn bỏ đăng ký theo frame. Các bài dự đoán khóa đáp án trước khi chạy và mở số đo tương ứng tại mốc kiểm chứng.
+
+## Tệp triển khai
+
+| Tệp mới                                                                    | Trách nhiệm                                                 |
+| -------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| `src/simulations/oscillator/physics.ts`, `renderer.ts` trong cùng thư mục  | Nghiệm giải tích, đường bao, đáp ứng tần số và Canvas lò xo |
+| `src/components/OscillatorGraphs.tsx`                                      | Đồ thị li độ, cơ năng và đáp ứng xác lập                    |
+| `src/simulations/interactive/physics.ts`, `renderer.ts` trong cùng thư mục | Hợp lực, công suất trung bình, hiệu suất và minh họa Canvas |
+| `src/challenges/phase3.ts`                                                 | Dữ liệu sáu bài, cách lấy số đo và điều kiện chấm           |
+| `tests/oscillator.test.ts`, `tests/phase3.test.ts`                         | Vật lý, biên số, đồng hồ, điều kiện đúng/sai và deep link   |
+
+| Tệp cập nhật                                                                                | Trách nhiệm                                            |
+| ------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| `src/simulations/catalog.ts`, `src/navigation.ts`                                           | Mô hình, slider, phân loại và hash                     |
+| `src/challenges/config.ts`, `src/components/ChallengePanel.tsx`                             | Kiểu bài, gợi ý, khóa đáp án, validator và kết quả     |
+| `src/components/LabWorkspace.tsx`, `ControlPanel.tsx`, `TheoryPanel.tsx` trong cùng thư mục | Nối trạng thái với giao diện, điều khiển và bảng đọc   |
+| `src/components/Graph.tsx`, `SimulationCanvas.tsx` trong cùng thư mục, `src/styles.css`     | Ẩn kết quả dự đoán, vòng đời Canvas và bố cục          |
+| `tests/phase2b-c-d.test.ts`                                                                 | Kiểm tra tường minh đủ 15 ID cũ và các mục catalog mới |
+| `README.md`, `README_.md`, `HANDOVER.md`                                                    | Cách dùng, cấu hình, chạy kiểm thử và bàn giao         |
+
+## Mô hình và các điểm audit
+
+| Mô hình           | Công thức, giả thiết và trường hợp biên đã rà                                                                                                                                     |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Hooke             | `Δl = F/k`, giãn dương, đàn hồi ngược ngoại lực. Slider giữ `\|Δl\| ≤ 0,30 m`. Phép đo F = 0 của bài điều tra giữ k ẩn và bị chặn khi chấm.                                       |
+| Lò xo lý tưởng    | `x = A cos(ωt + φ)`, `v = −Aω sin(ωt + φ)`, `a = −ω²x`. Chiều dương sang phải, năng lượng và chu kỳ độc lập với pha. Bài khối lượng chờ đúng một chu kỳ để hiện kết quả.          |
+| Moment lực        | `ΣM = F₁d₁ − F₂d₂` với hai lực hướng xuống hai phía O. Cánh tay đòn 0 cho moment 0. Quy ước ngược kim đồng hồ dương và dung sai học tập 0,10 N·m.                                 |
+| Chuyển động tròn  | `v = ωr`, `aₕₜ = ω²r`, `x = r cos(ωt + φ)`. Hai khung dùng cùng t và pha. Bài hình chiếu hiện đồ thị tại T/4 sau khi khóa đáp án.                                                 |
+| Ném ngang         | `x = v₀t`, `y = gt²/2`, trục y hướng xuống. Canvas và số liệu dừng ở `√(2h/g)`. Bài dự đoán ẩn tầm xa tới khi chạm đất.                                                           |
+| Con lắc đơn       | `θ″ = −(g/l) sin θ`, thả từ nghỉ, bỏ qua cản. RK4 bước 1/240 s và nội suy lúc trở về biên thả. Chu kỳ góc nhỏ dùng làm tham chiếu.                                                |
+| Va chạm           | Xe chạm theo hai mép, rồi dùng hệ khối tâm cho đàn hồi hoặc vận tốc chung cho va chạm mềm. Vận tốc và động lượng có dấu theo ray. Bảng Sau chỉ mở khi có tiếp xúc.                |
+| Công của lực      | `A = Fs cos α`, lực và độ dời không đổi. Kiểm tra dấu ở góc nhọn, vuông, tù và biên F hoặc s bằng 0.                                                                              |
+| Bảo toàn cơ năng  | `a = g sin β`, `E = ½mv² + mgy`. Dốc không ma sát, mốc thế năng ở chân dốc. Đồng hồ, Canvas và thanh năng lượng cùng dừng tại chân dốc.                                           |
+| Dao động nâng cao | `mx″ + bx′ + kx = F₀ cos(Ωt)`, `v(0) = 0`, `x(0) = x₀`. Cản nhớt `−bv`, lực đàn hồi `−kx`. Dưới tới hạn có đường bao `±A₀e⁻ᵇᵗ⁄²ᵐ`. Cơ năng của hệ tự do giảm theo `dE/dt = −bv²`. |
+| Tổng hợp lực      | Cộng các thành phần có dấu trên Ox/Oy, lấy hướng bằng `atan2`. Khi `R ≈ 0`, hướng không xác định. Các vector Canvas dùng chung tỉ lệ.                                             |
+| Công suất         | `P = A/t`, t > 0. Hai máy nhận cùng A, thanh thời gian dùng chung thang s và thanh công dùng chung thang J.                                                                       |
+| Hiệu suất         | `H = 100 × Aích/Ađầu vào`. Ràng buộc `0 ≤ Aích ≤ Ađầu vào` với đầu vào dương. Ba thanh dùng cùng thang J, với hao phí bằng đầu vào trừ phần có ích.                               |
+
+Solver dao động nâng cao đánh giá trực tiếp tại thời gian mô phỏng. Nghiệm thuần nhất phân theo dấu của `k/m − (b/2m)²`. Nghiệm cưỡng bức cộng đáp ứng riêng và nghiệm thuần nhất đã khớp điều kiện đầu. Gần điểm kỳ dị không cản, solver dùng tích phân chính xác của đáp ứng xung với các biểu thức ổn định số. Tại b = 0 và Ω = ω₀, hệ có thành phần biên độ tăng theo thời gian. [MIT OCW, Forced Oscillation and Resonance](https://ocw.mit.edu/courses/8-03sc-physics-iii-vibrations-and-waves-fall-2016/b6ac40e47d6a8b8c2642f174622785b1_MIT8_03SCF16_Text_Ch2.pdf)
+
+Quét tần số dùng b ≥ 0,1 N·s/m. Biên độ xác lập `X = F₀/√((k − mΩ²)² + (bΩ)²)` tính bằng m. Vị trí đỉnh `Ωđỉnh = √(k/m − b²/(2m²))` tính bằng rad/s và chỉ hiện khi căn thức dương. Mô phỏng dùng `useSimulation` hiện có, với một RAF khi chạy. Thay tham số đưa về t = 0. Đồ thị lưu đường theo tham số và cửa sổ thời gian, còn điểm đánh dấu theo frame.
+
+Hash chỉ khớp các route hoặc ID đã đăng ký. Slider giới hạn đầu vào hữu hạn và chuyển độ sang radian trước khi tính. Audit không thấy đường thực thi biểu thức hay chèn HTML từ đầu vào. Thông số và đáp án Challenge nằm trong bundle tĩnh, nên việc ẩn đáp án phục vụ quy trình học trong giao diện.
+
+## Kết quả kiểm chứng Phase 3
+
+| Kiểm tra                           | Kết quả thực tế                                                                                                                                                                                                                                                                      |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Baseline trên working tree ban đầu | 78/78 test, `pnpm exec tsc -b`, `pnpm format:check` và `pnpm build` đạt. Hai chỉnh sửa có sẵn trong `.gitignore` và nhãn Lý thuyết được giữ lại.                                                                                                                                     |
+| Regression sau triển khai          | 95/95 test đạt, gồm 17 test mới. TypeScript, Prettier và production build đạt. Hai kiểm tra catalog cũ được mở rộng để xác nhận danh sách mô hình mới và đủ từng ID cũ.                                                                                                              |
+| Challenge trên Chromium 156        | Chấm thành công cả 15 bài cũ. Cả sáu bài mới đã chạy đúng/sai, mở ba cấp gợi ý, thử lại và refresh deep link. Kiểm tra ẩn kết quả trước mốc và khóa dự đoán khi chạy.                                                                                                                |
+| Màn hình và điều khiển             | Chromium headless ở 1920×1080, 1366×768, 800×900 và 390×844. Đã kiểm tra chuyển bàn, Sandbox/Challenge, Trình chiếu, Pause/Resume/Reset, thay nhanh slider, Canvas resize và một phép đo 10 dao động con lắc ghi vào sổ tay. Không ghi nhận tràn ngang ở các trang kiểm tra.         |
+| RAF và kích thước Canvas           | Đếm tối đa một callback RAF của ứng dụng chờ khi chạy. Sau Pause, ẩn tab mô phỏng, đổi route và các minh họa tĩnh, số callback chờ bằng 0. Giả lập `visibilitychange` vì Chromium headless vẫn báo tab cũ đang hiện khi mở tab thứ hai.                                              |
+| Đo trước và sau chỉnh Canvas       | Trong hai mẫu 1,2 giây ở cùng bàn lò xo và viewport 1366×768, số lần Canvas đọc `getBoundingClientRect` giảm từ 175 trên 175 frame xuống 0 trên 174 frame. Chromium ghi nhận 186 và 185 lượt layout tương ứng. Phép đo xác nhận loại bỏ lượt đọc kích thước, chưa xác nhận tăng FPS. |
+| Hosting tĩnh và runtime            | Bản production qua Vite preview tại `/phylab/` và HTTP tĩnh ở root. Đã kiểm tra tài nguyên tương đối, refresh hash, DPR 2 ở root và không ghi nhận lỗi runtime trong luồng Chromium kiểm tra.                                                                                        |
+
+## Demo Phase 3
+
+1. Chạy `pnpm dev` rồi mở `#/oscillator`. Chọn Tắt dần và so sánh b = 1, 8, 12 N·s/m. Đổi sang Cưỡng bức, đặt b = 0 và Ω = 4 rad/s để thấy biên độ tăng. Sang Cộng hưởng, tăng b để quan sát đỉnh dương biến mất.
+2. Thử `#/forces` với hai lực cùng độ lớn và lệch 180°. Mở `#/power` để thay thời gian một máy, rồi `#/efficiency` để quan sát phần hao phí và trường hợp lý tưởng 100%.
+3. Mở Challenge Lab. Dùng `damping-envelope`, `resonance-frequency`, `oscillation-phenomena`, `force-resultant`, `power-time` và `efficiency-target` sau `#/challenges/` để vào từng bài. Thử một đáp án sai, mở gợi ý và dùng Thử lại.
+4. Chạy `pnpm build`. Dùng `pnpm preview --base /phylab/` để demo bản production dưới subpath. Triển khai tĩnh theo hướng dẫn trong README khi đến đợt phát hành.
+
+## Giới hạn và Phase 4
+
+Sandbox dao động nâng cao quan sát tối đa 30 giây vật lý mỗi lần. Tổng hợp lực điều chỉnh qua slider. Đánh giá trên thiết bị thực và kiểm chứng sư phạm trong lớp học thuộc đợt sau. Phase 4 gồm Guided Tour, trải nghiệm giám khảo, đánh giá thực tế, triển khai công khai và chuẩn bị bản STEM 1.0. Các tính năng ngoài phạm vi Phase 3 như tài khoản, backend, AI Tutor và báo cáo PDF đầy đủ được để lại ngoài bản này.
+
+---
+
 # PHYLAB — BÀN GIAO PHASE 2B, 2C VÀ 2D
 
 **Ngày lập** 09/11/2026

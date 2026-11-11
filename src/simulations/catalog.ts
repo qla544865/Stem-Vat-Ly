@@ -12,10 +12,37 @@ import { collisionDefaults } from './collision/physics.ts';
 import type { CollisionParams } from './collision/physics.ts';
 import { energyDefaults, workDefaults } from './energy/physics.ts';
 import type { EnergyParams, WorkParams } from './energy/physics.ts';
+import {
+  drivingForceMin,
+  oscillatorDefaults,
+  oscillatorLimits,
+  scanDampingMin,
+} from './oscillator/physics.ts';
+import type { OscillatorParams } from './oscillator/physics.ts';
+import {
+  efficiencyDefaults,
+  forceDefaults,
+  forceMax,
+  inputMax,
+  powerDefaults,
+  workMax,
+} from './interactive/physics.ts';
+import type { EfficiencyParams, ForceParams, PowerParams } from './interactive/physics.ts';
 import type { IconName } from '../components/Icon.tsx';
 
 export type Model =
-  'hooke' | 'spring' | 'torque' | 'circular' | 'projectile' | 'collision' | 'work' | 'energy';
+  | 'hooke'
+  | 'spring'
+  | 'torque'
+  | 'circular'
+  | 'projectile'
+  | 'collision'
+  | 'work'
+  | 'energy'
+  | 'oscillator'
+  | 'forces'
+  | 'power'
+  | 'efficiency';
 export type LabRoute = Model | 'pendulum';
 export type Category = 'theory' | 'experiments';
 export type SimulationConfig =
@@ -26,12 +53,17 @@ export type SimulationConfig =
   | { kind: 'projectile'; params: ProjectileParams }
   | { kind: 'collision'; params: CollisionParams }
   | { kind: 'work'; params: WorkParams }
-  | { kind: 'energy'; params: EnergyParams };
+  | { kind: 'energy'; params: EnergyParams }
+  | { kind: 'oscillator'; params: OscillatorParams }
+  | { kind: 'forces'; params: ForceParams }
+  | { kind: 'power'; params: PowerParams }
+  | { kind: 'efficiency'; params: EfficiencyParams };
 
 export interface DisplayOptions {
   velocity: boolean;
   acceleration: boolean;
   annotations: boolean;
+  components?: boolean;
 }
 export interface Parameter {
   key: string;
@@ -46,7 +78,7 @@ export interface Parameter {
 }
 
 export const categoryLabels: Record<Category, string> = {
-  theory: 'Lý thuyết',
+  theory: 'Mô Phỏng Lý thuyết',
   experiments: 'Thí nghiệm',
 };
 export const staticDescription = 'Minh họa tương tác, thay đổi thông số để quan sát kết quả';
@@ -136,6 +168,40 @@ export const catalog: Record<
     description: 'Thả vật từ đỉnh dốc và quan sát thế năng chuyển thành động năng.',
     tags: ['Động năng', 'Thế năng'],
   },
+  oscillator: {
+    category: 'experiments',
+    title: 'Dao động nâng cao',
+    subject: 'LÒ XO · LỰC CẢN · LỰC KÍCH THÍCH',
+    icon: 'spring',
+    description:
+      'So sánh chuyển động tự do tắt dần, cưỡng bức và đáp ứng cộng hưởng của cùng một hệ lò xo.',
+    tags: ['Tắt dần', 'Cưỡng bức', 'Cộng hưởng'],
+  },
+  forces: {
+    category: 'theory',
+    title: 'Tổng hợp và phân tích lực',
+    subject: 'HAI LỰC ĐỒNG QUY',
+    icon: 'work',
+    description: 'Thay đổi hai lực và đối chiếu hợp lực với các hình chiếu trên Ox, Oy.',
+    tags: ['Hình bình hành', 'Thành phần lực'],
+  },
+  power: {
+    category: 'theory',
+    title: 'Công suất',
+    subject: 'CÙNG CÔNG · KHÁC THỜI GIAN',
+    icon: 'energy',
+    description:
+      'So sánh hai máy thực hiện cùng một lượng công trong những khoảng thời gian khác nhau.',
+    tags: ['P = A/t', 'Công suất trung bình'],
+  },
+  efficiency: {
+    category: 'theory',
+    title: 'Hiệu suất',
+    subject: 'CÔNG CÓ ÍCH VÀ HAO PHÍ',
+    icon: 'energy',
+    description: 'Phân chia công đầu vào thành phần có ích và phần hao phí của một máy nâng.',
+    tags: ['H (%)', 'Cân bằng năng lượng'],
+  },
 };
 export const modelsIn = (category: Category) =>
   (Object.keys(catalog) as LabRoute[]).filter((model) => catalog[model].category === category);
@@ -159,6 +225,14 @@ export function defaultConfig(model: Model): SimulationConfig {
       return { kind: model, params: { ...workDefaults } };
     case 'energy':
       return { kind: model, params: { ...energyDefaults } };
+    case 'oscillator':
+      return { kind: model, params: { ...oscillatorDefaults } };
+    case 'forces':
+      return { kind: model, params: { ...forceDefaults } };
+    case 'power':
+      return { kind: model, params: { ...powerDefaults } };
+    case 'efficiency':
+      return { kind: model, params: { ...efficiencyDefaults } };
   }
 }
 
@@ -194,7 +268,102 @@ const gravity: ParameterSpec = {
   step: 0.01,
   digits: 2,
 };
+const oscillatorParameter = (
+  key: keyof typeof oscillatorLimits,
+  label: string,
+  symbol: string,
+  unit: string,
+  step: number,
+  digits: number,
+): ParameterSpec => {
+  const [min, max] = oscillatorLimits[key];
+  return { key, label, symbol, unit, min, max, step, digits };
+};
+const forceParameter: ParameterSpec = {
+  key: 'F1',
+  label: 'Độ lớn lực 1',
+  symbol: 'F₁',
+  unit: 'N',
+  min: 0,
+  max: forceMax,
+  step: 0.5,
+  digits: 1,
+};
+const directionParameter: ParameterSpec = {
+  key: 'angle1',
+  label: 'Hướng lực 1 từ Ox',
+  symbol: 'α₁',
+  unit: '°',
+  min: 0,
+  max: 360,
+  step: 1,
+  digits: 0,
+  radians: true,
+};
+const durationParameter: ParameterSpec = {
+  key: 't1',
+  label: 'Thời gian máy A',
+  symbol: 't₁',
+  unit: 's',
+  min: 1,
+  max: 30,
+  step: 0.5,
+  digits: 1,
+};
 export const parameterSpecs: Record<Model, ParameterSpec[]> = {
+  oscillator: [
+    oscillatorParameter('m', 'Khối lượng', 'm', 'kg', 0.05, 2),
+    oscillatorParameter('k', 'Độ cứng lò xo', 'k', 'N/m', 0.5, 1),
+    oscillatorParameter('b', 'Hệ số cản nhớt', 'b', 'N·s/m', 0.1, 1),
+    oscillatorParameter('x0', 'Li độ khi thả', 'x₀', 'm', 0.01, 2),
+    {
+      ...oscillatorParameter('force', 'Biên độ lực kích thích', 'F₀', 'N', 0.1, 1),
+      min: drivingForceMin,
+    },
+    oscillatorParameter('omega', 'Tần số góc kích thích', 'Ω', 'rad/s', 0.05, 2),
+  ],
+  forces: [
+    forceParameter,
+    directionParameter,
+    { ...forceParameter, key: 'F2', label: 'Độ lớn lực 2', symbol: 'F₂' },
+    { ...directionParameter, key: 'angle2', label: 'Hướng lực 2 từ Ox', symbol: 'α₂' },
+  ],
+  power: [
+    {
+      key: 'work',
+      label: 'Công mỗi máy thực hiện',
+      symbol: 'A',
+      unit: 'J',
+      min: 50,
+      max: workMax,
+      step: 10,
+      digits: 0,
+    },
+    durationParameter,
+    { ...durationParameter, key: 't2', label: 'Thời gian máy B', symbol: 't₂' },
+  ],
+  efficiency: [
+    {
+      key: 'input',
+      label: 'Công đầu vào',
+      symbol: 'Aᵥ',
+      unit: 'J',
+      min: 100,
+      max: inputMax,
+      step: 10,
+      digits: 0,
+    },
+    {
+      key: 'useful',
+      label: 'Công có ích',
+      symbol: 'Aᵢ',
+      unit: 'J',
+      min: 0,
+      max: inputMax,
+      step: 10,
+      digits: 0,
+    },
+  ],
   hooke: [
     {
       key: 'k',
@@ -427,7 +596,7 @@ export const parameterSpecs: Record<Model, ParameterSpec[]> = {
 
 export function getParameters(config: SimulationConfig, hidden: string[] = []): Parameter[] {
   const values = config.params as unknown as Record<string, number>;
-  return parameterSpecs[config.kind]
+  return visibleSpecs(config)
     .filter((p) => !hidden.includes(p.key))
     .map(({ radians, ...p }) => ({
       ...p,
@@ -435,15 +604,31 @@ export function getParameters(config: SimulationConfig, hidden: string[] = []): 
     }));
 }
 
+function visibleSpecs(config: SimulationConfig): ParameterSpec[] {
+  const specs = parameterSpecs[config.kind];
+  if (config.kind === 'efficiency')
+    return specs.map((spec) =>
+      spec.key === 'useful' ? { ...spec, max: config.params.input } : spec,
+    );
+  if (config.kind !== 'oscillator') return specs;
+  if (config.params.mode === 'damped')
+    return specs.filter(({ key }) => key !== 'force' && key !== 'omega');
+  if (config.params.mode === 'resonance')
+    return specs.map((spec) => (spec.key === 'b' ? { ...spec, min: scanDampingMin } : spec));
+  return specs;
+}
+
 export function updateParameter(
   config: SimulationConfig,
   key: string,
   input: number,
 ): SimulationConfig {
-  const spec = parameterSpecs[config.kind].find((p) => p.key === key);
+  const spec = visibleSpecs(config).find((p) => p.key === key);
   if (!spec || !Number.isFinite(input)) return config;
   const bounded = Math.min(spec.max, Math.max(spec.min, input));
   const value = spec.radians ? (bounded * Math.PI) / 180 : bounded;
+  if (config.kind === 'efficiency' && key === 'input')
+    return { ...config, params: { input: value, useful: Math.min(config.params.useful, value) } };
   const next = { ...config };
   next.params = { ...config.params, [key]: value };
   return next;

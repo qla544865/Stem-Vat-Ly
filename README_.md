@@ -1,4 +1,4 @@
-# PhyLab — giai đoạn 2D
+# PhyLab — Phase 3
 
 Phòng thí nghiệm vật lý tương tác dành cho học sinh THPT, giữ nhận diện **STEM vật lý 11C5**. React + TypeScript + Vite, Canvas 2D và SVG. Không backend, tài khoản, API hay physics engine bên ngoài.
 
@@ -17,6 +17,7 @@ Mở địa chỉ Vite in ra, thường là `http://127.0.0.1:5173/`.
 
 ```sh
 pnpm test         # Các hàm vật lý, đồng hồ, rendering vector và điều kiện Challenge
+pnpm exec tsc -b  # Kiểm tra TypeScript độc lập
 pnpm build        # Kiểm tra TypeScript và tạo bản production trong dist/
 pnpm preview      # Xem bản production
 pnpm format       # Định dạng source bằng Prettier
@@ -27,8 +28,8 @@ pnpm format:check # Kiểm tra định dạng
 
 Thanh điều hướng chia nội dung thành ba khu vực. Các liên kết mở trong cùng ứng dụng và giữ tương thích với các hash cũ, kể cả `#/spring` và `#/spring/hooke`.
 
-- **Lý thuyết** (`#/theory`) có Hooke, moment lực và công của lực. Mỗi minh họa cập nhật ngay khi đổi tham số.
-- **Thí nghiệm** (`#/experiments`) có dao động lò xo, chuyển động tròn và hình chiếu, ném ngang, con lắc đơn, va chạm và bảo toàn cơ năng. Mỗi mô hình mở ở Sandbox. Con lắc đơn còn có ba bài thực hành đo đạc.
+- **Lý thuyết** (`#/theory`) có Hooke, moment lực, công của lực, tổng hợp và phân tích lực, công suất và hiệu suất. Mỗi minh họa cập nhật ngay khi đổi tham số.
+- **Thí nghiệm** (`#/experiments`) có dao động lò xo, chuyển động tròn và hình chiếu, ném ngang, con lắc đơn, va chạm, bảo toàn cơ năng và dao động nâng cao. Mỗi mô hình mở ở Sandbox. Con lắc đơn còn có ba bài thực hành đo đạc.
 - **Challenge Lab** (`#/challenges`) mở thử thách từ cả hai nhóm. Từng bài có đường dẫn `#/challenges/<id>` và dùng lại mô hình tương ứng.
 
 | Nhóm                | Nội dung                                                          | Đồ thị                                          |
@@ -42,13 +43,24 @@ Thanh điều hướng chia nội dung thành ba khu vực. Các liên kết m�
 | Va chạm             | Hai xe trên ray một chiều, va chạm đàn hồi hoặc mềm               | Bảng vận tốc, động lượng và động năng trước/sau |
 | Công của lực        | Minh họa tĩnh về lực, độ dời, góc và dấu của công                 | Công thức và giá trị A theo J                   |
 | Bảo toàn cơ năng    | Vật thả từ nghỉ trên mặt phẳng nghiêng                            | Thanh động năng, thế năng và cơ năng theo J     |
+| Dao động nâng cao   | Lò xo có lực cản nhớt và ngoại lực tuần hoàn                      | x(t), đường bao, E(t), X(Ω)                     |
+| Tổng hợp lực        | Hai lực đồng quy và hợp lực                                       | Hình bình hành và hình chiếu Ox, Oy             |
+| Công suất           | Hai máy cùng công A, khác thời gian                               | Thanh công, thời gian và số liệu W              |
+| Hiệu suất           | Công đầu vào, công có ích và hao phí                              | Ba thanh trên cùng thang J                      |
 
-- **Hooke, moment và công của lực** có nhãn “Minh họa tương tác, thay đổi thông số để quan sát kết quả”. Dùng slider và nút Khôi phục thông số để so sánh các trường hợp.
+- **Minh họa Lý thuyết** phản hồi khi đổi slider. Dùng nút Khôi phục thông số để về bộ mặc định.
 - **Mô phỏng động** có Play/Pause/Resume/Reset, tốc độ 0.5×/1×/2× và chế độ Trình chiếu. Reset giữ tham số. Khôi phục thông số trả về bộ mặc định.
 - Thay tham số của mô hình động đưa về t = 0 và Pause. Đổi nhóm/nội dung dọn vòng animation cũ và mở Sandbox mới.
 - Vector vận tốc và gia tốc bật/tắt độc lập; chú thích có công tắc riêng. Vector được scale theo bộ thông số/khung vẽ để dễ nhìn; giá trị vật lý vẫn theo SI. Vector vận tốc lò xo không bị cắt ngưỡng gây bão hòa ở gần vị trí cân bằng.
 - Góc và pha điều chỉnh bằng độ ở UI, chuyển sang radian trước khi tính toán. Công thức và bảng đọc luôn ghi rõ đơn vị.
 - Trên desktop, panel ở bên phải. Khi chiều rộng ≤ 1000 px, panel chuyển xuống dưới; slider xếp hai cột trên tablet, một cột trên màn hình nhỏ.
+
+## Sử dụng nội dung Phase 3
+
+1. Mở `#/oscillator` và chọn **Tắt dần**. So sánh b = 1, 8 và 12 N·s/m với m = 1 kg và k = 16 N/m. Chỉ miền dưới tới hạn có hai đường bao trên đồ thị. Dùng đồ thị E(t) để quan sát cơ năng giảm khi b > 0.
+2. Chọn **Cưỡng bức** và quan sát đường li độ thực cùng thành phần xác lập nét đứt khi b > 0. Chọn **Cộng hưởng** để so sánh vị trí Ω đang chọn, ω₀ và đỉnh li độ nếu có. Tần số góc đọc theo rad/s. Sandbox quan sát tối đa 30 giây vật lý mỗi lần chạy.
+3. Mở `#/forces` và thay độ lớn, hướng hai lực bằng slider. Công tắc thành phần hiện hoặc ẩn đường chiếu trên hai trục. Hướng hợp lực được đo từ Ox theo chiều ngược kim đồng hồ.
+4. Mở `#/power` để so sánh thời gian và công suất của hai máy thực hiện cùng công. Mở `#/efficiency` để chia công đầu vào thành phần có ích và hao phí. Khi giảm công đầu vào dưới công có ích, slider công có ích hạ về giới hạn mới.
 
 ## Con lắc đơn — Phase 2A
 
@@ -76,32 +88,42 @@ Phép đo dùng thời gian vật lý. Tốc độ 2× rút ngắn thời gian c
 - **Va chạm** xét hai xe dài 1,2 m trên ray ngang dài 20 m. Chiều dương sang phải và bỏ qua ngoại lực theo ray. Với v₁ > v₂, hai mép tiếp xúc sau thời gian `(x₂ − x₁ − 1,2)/(v₁ − v₂)`. Va chạm đàn hồi đảo dấu vận tốc tương đối trong hệ khối tâm. Va chạm mềm cho cả hai xe vận tốc chung `P/(m₁+m₂)`. Dừng quan sát ở 10 s hoặc khi một xe tới biên ray.
 - **Công của lực** tính `A = Fs cos α` cho một lực không đổi và độ dời cho trước. Hệ số cos ở 90° được xử lý về 0. F = 0 hoặc s = 0 cũng cho A = 0.
 - **Bảo toàn cơ năng** dùng dốc cố định không ma sát và chọn chân dốc làm mốc thế năng. Giải theo thời gian với `a = g sin β`, `s = at²/2` và `L = h/sin β`. Đồng hồ dừng ở `t = √(2L/a)`, khi vật tới chân dốc với tốc độ `√(2gh)`. Thanh năng lượng so sánh `½mv²`, `mgy` và tổng của chúng.
+- **Dao động nâng cao** giải `mx″ + bx′ + kx = F₀ cos(Ωt)` với x dương sang phải, x(0) = x₀ và v(0) = 0. Lò xo tuyến tính và lực cản nhớt lý tưởng. Tắt dần đặt F₀ = 0. Khi b > 0, biên độ xác lập là `X = F₀/√((k − mΩ²)² + (bΩ)²)`. Đỉnh li độ dương chỉ có khi `k/m − b²/(2m²) > 0`. Quét cộng hưởng dùng b ≥ 0,1 N·s/m. Trường hợp không cản đúng ω₀ được quan sát trong chế độ Cưỡng bức. [MIT OCW, Forced Oscillation and Resonance](https://ocw.mit.edu/courses/8-03sc-physics-iii-vibrations-and-waves-fall-2016/b6ac40e47d6a8b8c2642f174622785b1_MIT8_03SCF16_Text_Ch2.pdf)
+- **Tổng hợp lực** dùng `Rx = F₁x + F₂x`, `Ry = F₁y + F₂y`, `R = hypot(Rx, Ry)` và `atan2(Ry, Rx)`. Hợp lực bằng 0 có hướng không xác định. Tất cả vector dùng cùng tỉ lệ trong Canvas.
+- **Công suất** dùng `P = A/t` với t > 0. So sánh công suất trung bình qua hai thời gian hoàn thành, với công chung cho trước.
+- **Hiệu suất** dùng `H = 100 × Aích/Ađầu vào` với đầu vào dương. Công hao phí bằng hiệu giữa công đầu vào và công có ích. Ba thanh dùng chung miền 0–1000 J.
 
 Mọi hàm physics kiểm tra tính hữu hạn và các điều kiện dấu phù hợp. Ứng dụng không cần Internet để tính hoặc chạy thí nghiệm sau khi tải frontend; Google Fonts là tài nguyên trình bày tùy chọn, có font hệ thống dự phòng.
 
 ## Challenge Lab
 
-Có **15 thử thách**, dùng chung mô hình vật lý với khu vực Lý thuyết và Thí nghiệm.
+Có **21 thử thách**, dùng chung mô hình vật lý với khu vực Lý thuyết và Thí nghiệm. Bài **Đạt mục tiêu** chấm thông số qua kết quả vật lý. Bài **Dự đoán** khóa đáp án khi bắt đầu mô phỏng hoặc khi nộp các tình huống phân loại. Bài **Điều tra** dùng phép đo để suy ra đại lượng bị ẩn.
 
-| Thử thách                     | Thao tác                                    | Điều kiện hoàn thành                                 |
-| ----------------------------- | ------------------------------------------- | ---------------------------------------------------- |
-| Độ cứng bí mật                | Chỉnh F khác 0, quan sát Δl, nhập k         | Đúng trong ±5%; không kiểm tra được từ phép đo F = 0 |
-| Đạt chu kỳ mục tiêu           | Chỉnh m, k rồi chạy                         | T = 2 s ± 0,05 s                                     |
-| Khối lượng & chu kỳ (giữ lại) | Dự đoán, tăng m từ 0,5 lên 2 kg, chạy       | Chọn tăng 2 lần và đo đúng tỉ số T₂/T₁               |
-| Cân bằng thanh                | Chỉnh d₂ với F₁ = 20 N, d₁ = 1 m, F₂ = 10 N | Độ lớn chênh lệch moment ≤ 0,10 N·m; nghiệm d₂ = 2 m |
-| Gia tốc hướng tâm             | Chỉnh r, ω rồi chạy                         | aₕₜ = 18 m/s² ± 0,20 m/s²                            |
-| Dự đoán hình chiếu            | Chọn đáp án trước khi chạy từ φ = 0         | Tự dừng ở T/4; chọn x = 0                            |
-| Bắn trúng mục tiêu (giữ lại)  | Chỉnh v₀, chạy đến khi chạm đất             | Tầm xa cách 18 m không quá 0,50 m                    |
-| Dự đoán tầm xa (giữ lại)      | Nhập đáp án trước khi chạy                  | Sai lệch ≤ 0,50 m; kiểm tra sau khi chạm đất         |
-| Dự đoán vận tốc sau va chạm   | Nhập vận tốc có dấu của xe A rồi chạy       | Sai lệch ≤ 0,05 m/s, kiểm tra sau tiếp xúc           |
-| Hai xe cùng đứng yên          | Chỉnh vận tốc hai xe trong va chạm mềm      | Vận tốc chung có độ lớn ≤ 0,05 m/s sau tiếp xúc      |
-| Đại lượng nào được bảo toàn?  | Chọn đại lượng và chạy va chạm mềm          | Chọn tổng động lượng và quan sát tiếp xúc            |
-| Tạo công 100 J                | Chỉnh F, s và α                             | Công dương 100 J ± 0,5 J                             |
-| Phân loại công của lực        | Chọn dấu công ở 30°, 90° và 150°            | Cả ba dấu đúng                                       |
-| Tìm độ cao để đạt 10 m/s      | Chỉnh h và chạy tới chân dốc                | Tốc độ 10 m/s ± 0,05 m/s                             |
-| Dự đoán sự chuyển hóa cơ năng | Chọn dự đoán và chạy tới chân dốc           | Động năng tăng, thế năng giảm, cơ năng giữ nguyên    |
+| Thử thách                      | Thao tác                                            | Điều kiện hoàn thành                                 |
+| ------------------------------ | --------------------------------------------------- | ---------------------------------------------------- |
+| Độ cứng bí mật                 | Chỉnh F khác 0, quan sát Δl, nhập k                 | Đúng trong ±5%; không kiểm tra được từ phép đo F = 0 |
+| Đạt chu kỳ mục tiêu            | Chỉnh m, k rồi chạy                                 | T = 2 s ± 0,05 s                                     |
+| Khối lượng & chu kỳ (giữ lại)  | Dự đoán, tăng m từ 0,5 lên 2 kg, chạy               | Chọn tăng 2 lần và đo đúng tỉ số T₂/T₁               |
+| Cân bằng thanh                 | Chỉnh d₂ với F₁ = 20 N, d₁ = 1 m, F₂ = 10 N         | Độ lớn chênh lệch moment ≤ 0,10 N·m; nghiệm d₂ = 2 m |
+| Gia tốc hướng tâm              | Chỉnh r, ω rồi chạy                                 | aₕₜ = 18 m/s² ± 0,20 m/s²                            |
+| Dự đoán hình chiếu             | Chọn đáp án trước khi chạy từ φ = 0                 | Tự dừng ở T/4; chọn x = 0                            |
+| Bắn trúng mục tiêu (giữ lại)   | Chỉnh v₀, chạy đến khi chạm đất                     | Tầm xa cách 18 m không quá 0,50 m                    |
+| Dự đoán tầm xa (giữ lại)       | Nhập đáp án trước khi chạy                          | Sai lệch ≤ 0,50 m; kiểm tra sau khi chạm đất         |
+| Dự đoán vận tốc sau va chạm    | Nhập vận tốc có dấu của xe A rồi chạy               | Sai lệch ≤ 0,05 m/s, kiểm tra sau tiếp xúc           |
+| Hai xe cùng đứng yên           | Chỉnh vận tốc hai xe trong va chạm mềm              | Vận tốc chung có độ lớn ≤ 0,05 m/s sau tiếp xúc      |
+| Đại lượng nào được bảo toàn?   | Chọn đại lượng và chạy va chạm mềm                  | Chọn tổng động lượng và quan sát tiếp xúc            |
+| Tạo công 100 J                 | Chỉnh F, s và α                                     | Công dương 100 J ± 0,5 J                             |
+| Phân loại công của lực         | Chọn dấu công ở 30°, 90° và 150°                    | Cả ba dấu đúng                                       |
+| Tìm độ cao để đạt 10 m/s       | Chỉnh h và chạy tới chân dốc                        | Tốc độ 10 m/s ± 0,05 m/s                             |
+| Dự đoán sự chuyển hóa cơ năng  | Chọn dự đoán và chạy tới chân dốc                   | Động năng tăng, thế năng giảm, cơ năng giữ nguyên    |
+| Điều chỉnh tắt dần             | Chỉnh b và chạy tới 5 s                             | Đường bao dưới 0,05 m trong miền dưới tới hạn        |
+| Tìm tần số kích thích          | Đo X với các giá trị Ω                              | Sai lệch với đỉnh li độ tối đa 0,05 rad/s            |
+| Phân biệt hiện tượng           | Phân loại ba tình huống bằng thông số lực và tần số | Cả ba đúng                                           |
+| Tạo hợp lực theo hướng yêu cầu | Chỉnh độ lớn và hướng lực 2                         | 20 N ± 0,5 N, 37° ± 2°                               |
+| Tìm thời gian nâng             | Chỉnh thời gian máy A thực hiện 300 J               | Công suất 40 W ± 0,25 W                              |
+| Đạt hiệu suất mục tiêu         | Chỉnh công có ích của máy nhận 400 J                | 75% ± 0,5 điểm phần trăm                             |
 
-Mỗi bài có gợi ý, giải thích, thông báo đúng/sai và Thử lại. Bài dự đoán khóa câu trả lời sau khi chạy, Reset/Thử lại cho phép dự đoán lại. Đáp án không được tự xác nhận ngay lúc mở bài. Độ cứng bí mật bị ẩn ở slider, Canvas và số liệu; đồ thị không cho dữ kiện suy k ở F = 0. Bài dự đoán tầm xa ẩn kết quả và đồ thị cho đến khi chạm đất.
+Các bài mới có ba cấp gợi ý mở tuần tự. Chọn **Kiểm tra kết quả** khi đủ điều kiện để xem mục tiêu, số đo và giải thích. Chọn **Thử lại** để xóa câu trả lời, thông số đã chỉnh và gợi ý đã mở. Reset mô phỏng giữ thông số và mở một lượt dự đoán mới. Bài độ cứng bí mật ẩn k ở slider, Canvas và số liệu. Bài tìm tần số kích thích hiện đường quét sau khi kiểm tra.
 
 ## Cấu trúc source
 
@@ -118,6 +140,7 @@ src/
     SimulationControls.tsx      # Play/Pause/Reset/tốc độ
     ControlPanel.tsx             # Slider và công tắc hiển thị dùng chung
     Graph.tsx                   # SVG: đồ thị theo thời gian/Hooke/moment
+    OscillatorGraphs.tsx        # Li độ, cơ năng và đường quét cộng hưởng
     TheoryPanel.tsx             # Công thức, giả thiết, số liệu SI
     ChallengePanel.tsx
   simulations/
@@ -131,23 +154,28 @@ src/
     circular/{physics,renderer}.ts
     projectile/{physics,renderer}.ts
     pendulum/                    # RK4, đo, cấu hình bài, vẽ và tương tác Canvas
+    oscillator/                 # Nghiệm giải tích và Canvas lò xo có cản/kích thích
+    interactive/                # Hợp lực, công suất và hiệu suất
   challenges/config.ts          # Nội dung, cấu hình, validation và điều kiện thử nghiệm
+  challenges/phase3.ts          # Sáu bài Phase 3 và hàm lấy số đo
   styles.css
 tests/
   physics.test.ts               # Test cũ, được giữ lại và cập nhật clock
   phase1.test.ts                # Hooke, moment, pha, tròn, Challenge, giới hạn và routes
   spring-renderer.test.ts       # Độ dài/hướng vector Canvas theo pha dao động
   pendulum.test.ts              # Chu kỳ, năng lượng, phép đo và fit T²–l
+  oscillator.test.ts            # Nghiệm giải tích, biên slider và pha kích thích
+  phase3.test.ts                # Vật lý tương tác và validator Phase 3
 ```
 
 Một RAF duy nhất cập nhật Canvas và dấu chỉ SVG theo từng frame; bảng số liệu React cập nhật tối đa 10 Hz. Đường cong SVG chỉ được dựng lại khi đổi thông số, đại lượng hoặc cửa sổ thời gian. Tab ẩn hủy frame đang đợi, quay lại lấy mốc mới. Khoảng gián đoạn quá 250 ms do main thread bị treo không được cộng dồn vào thời gian vật lý. Cleanup khi pause, đổi thí nghiệm hoặc unmount.
 
 ## Chỉnh mặc định, slider hoặc Challenge
 
-- Mặc định nằm trong `springDefaults`, `hookeDefaults`, `torqueDefaults`, `circularDefaults`, `projectileDefaults` cạnh các hàm physics.
+- Mỗi bộ mặc định nằm cạnh hàm physics của mô hình.
 - Giới hạn/đơn vị/bước slider nằm ở `parameterSpecs` trong `src/simulations/catalog.ts`. Giữ mặc định và `initial` của Challenge trong giới hạn. `phi` tại physics/Challenge luôn là radian.
-- Thêm một bài cùng mô hình vào `challenges` trong `src/challenges/config.ts`: ID duy nhất, `experiment`, `model` nếu là Hooke, tiêu đề/mô tả, `initial`, `editable`, mục tiêu/dung sai, gợi ý và giải thích. `answer` định nghĩa trường số hoặc các lựa chọn.
-- Thêm ID vào `ChallengeId`; bổ sung nhánh kiểm tra trong `validateChallenge`/`canCheckChallenge`, và đại lượng đối chiếu trong `LabWorkspace` nếu bài dùng đại lượng mới. Với kiểu dự đoán cần khóa trước Play, cập nhật `predictionBeforeRun`. Không tạo mô phỏng hoặc engine riêng cho từng bài.
+- Thêm ID duy nhất vào `ChallengeId`. Khai báo mô hình, `initial`, `editable`, `type`, mục tiêu và dung sai, `hint`, `extraHints` nếu có và `explanation`. Xem các ví dụ trong `src/challenges/phase3.ts`.
+- Dùng `measure` để lấy số đo từ trạng thái mô hình. Dùng `checkWhen` hoặc `observeUntil` để đặt điều kiện kiểm tra, `answer` cho một trường nhập hoặc `classification` cho nhiều tình huống. Bổ sung validator khi quy tắc vật lý mới cần một cách chấm khác.
 - Thêm test đúng/sai, test điều kiện thực nghiệm và một lần thử trong UI cho bài mới.
 
 ## Build và deploy frontend tĩnh
@@ -158,7 +186,7 @@ pnpm build
 
 Đưa **toàn bộ nội dung `dist/`** lên hosting tĩnh, giữ nguyên `assets/` và `favicon.svg`. Không cần server Node.js lúc chạy sản phẩm.
 
-`vite.config.ts` dùng `base: './'`, favicon và tài nguyên build có đường dẫn tương đối. Điều hướng bằng hash (`#/spring/hooke`, `#/spring/oscillation`, `#/torque`, `#/circular`, `#/pendulum`, `#/projectile`), nên không cần cấu hình rewrite SPA trên server.
+`vite.config.ts` dùng `base: './'`, favicon và tài nguyên build có đường dẫn tương đối. Điều hướng bằng hash, ví dụ `#/oscillator` hoặc `#/challenges/damping-envelope`. Hosting tĩnh có thể phục vụ trực tiếp `index.html` tại thư mục gốc hoặc subpath.
 
 - **GitHub Pages:** build trên CI/máy local rồi triển khai `dist/` làm Pages artifact (hoặc nội dung nhánh xuất bản). Có thể đặt dưới subpath của repository, ví dụ `/PhySim/`, mà không đổi source.
 - **Cloudflare Pages:** build command `pnpm build`, output directory `dist`, dùng Node 22.18+/24+. Không cần Functions hoặc backend.

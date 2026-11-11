@@ -13,6 +13,10 @@ export const modelPath: Record<LabRoute, string> = {
   collision: '#/collision',
   work: '#/work',
   energy: '#/energy',
+  oscillator: '#/oscillator',
+  forces: '#/forces',
+  power: '#/power',
+  efficiency: '#/efficiency',
 };
 
 export type Area = Category | 'challenges';

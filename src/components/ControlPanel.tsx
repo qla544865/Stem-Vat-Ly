@@ -25,7 +25,9 @@ export default function ControlPanel(p: Props) {
       key: 'acceleration',
       label: p.model === 'circular' ? 'Vector gia tốc hướng tâm' : 'Vector gia tốc',
     });
-  toggles.push({ key: 'annotations', label: 'Chú thích mô phỏng' });
+  if (p.model === 'forces') toggles.push({ key: 'components', label: 'Thành phần theo Ox và Oy' });
+  if (p.model !== 'power' && p.model !== 'efficiency')
+    toggles.push({ key: 'annotations', label: 'Chú thích mô phỏng' });
 
   return (
     <aside className="control-card card">
@@ -85,20 +87,22 @@ export default function ControlPanel(p: Props) {
         <Icon name="reset" size={15} />
         Khôi phục thông số
       </button>
-      <div className="display-options">
-        <span>HIỂN THỊ</span>
-        {toggles.map((toggle) => (
-          <label className="switch-row" key={toggle.key}>
-            {toggle.label}
-            <input
-              type="checkbox"
-              checked={p.display[toggle.key]}
-              onChange={(e) => p.onDisplay(toggle.key, e.target.checked)}
-            />
-            <span className="switch" aria-hidden="true" />
-          </label>
-        ))}
-      </div>
+      {toggles.length > 0 && (
+        <div className="display-options">
+          <span>HIỂN THỊ</span>
+          {toggles.map((toggle) => (
+            <label className="switch-row" key={toggle.key}>
+              {toggle.label}
+              <input
+                type="checkbox"
+                checked={Boolean(p.display[toggle.key])}
+                onChange={(e) => p.onDisplay(toggle.key, e.target.checked)}
+              />
+              <span className="switch" aria-hidden="true" />
+            </label>
+          ))}
+        </div>
+      )}
       <div className="control-note">
         <Icon name="info" size={17} />
         <p>{p.note}</p>

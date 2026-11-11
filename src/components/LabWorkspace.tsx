@@ -1,14 +1,13 @@
 import { useMemo, useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
-import type { Challenge } from '../challenges/config.ts';
+import type { Challenge, Measurement } from '../challenges/config.ts';
 import {
   canCheckChallenge,
   challengeModel,
   challenges,
+  classificationScore,
   predictionBeforeRun,
   validateChallenge,
-  workAngles,
-  workSignScore,
 } from '../challenges/config.ts';
 import type { DisplayOptions, Model, SimulationConfig } from '../simulations/catalog.ts';
 import {
@@ -31,6 +30,12 @@ import {
 } from '../simulations/collision/physics.ts';
 import { energyState, workState } from '../simulations/energy/physics.ts';
 import { useSimulation } from '../simulations/useSimulation.ts';
+import {
+  createOscillator,
+  oscillatorObservationTime,
+  scanDampingMin,
+} from '../simulations/oscillator/physics.ts';
+import type { OscillationMode } from '../simulations/oscillator/physics.ts';
 import SimulationCanvas from './SimulationCanvas';
 import SimulationControls from './SimulationControls';
 import ControlPanel from './ControlPanel';
@@ -40,6 +45,19 @@ import TheoryPanel, { assumptions, format, learningTips, readouts } from './Theo
 import Icon from './Icon';
 import CatalogSelect from './CatalogSelect';
 import { CollisionAnalysis, EnergyBars } from './LabAnalysis';
+import OscillatorGraphs from './OscillatorGraphs';
+
+const oscillationModes: Record<OscillationMode, string> = {
+  damped: 'Tắt dần',
+  driven: 'Cưỡng bức',
+  resonance: 'Cộng hưởng',
+};
+const regimeLabels = {
+  ideal: 'Tự do không cản',
+  under: 'Dưới tắt dần tới hạn',
+  critical: 'Tắt dần tới hạn',
+  over: 'Quá tắt dần',
+};
 
 function initialChallengeConfig(c: Challenge): SimulationConfig {
   const defaults = defaultConfig(challengeModel(c));
@@ -59,10 +77,12 @@ export default function LabWorkspace({
     velocity: model === 'circular' || model === 'collision' || model === 'energy',
     acceleration: model === 'circular',
     annotations: true,
+    components: model === 'forces',
   });
   const [presenting, setPresenting] = useState(false);
+  const presentationActive = presenting && !challenge?.classification;
   return (
-    <div className={presenting ? 'lab-presenting' : undefined}>
+    <div className={presentationActive ? 'lab-presenting' : undefined}>
       <LabSession
         key={challenge?.id ?? model}
         model={model}
@@ -71,7 +91,7 @@ export default function LabWorkspace({
         setSpeed={setSpeed}
         display={display}
         setDisplay={setDisplay}
-        presenting={presenting}
+        presenting={presentationActive}
         onPresentation={() => setPresenting(!presenting)}
       />
     </div>
@@ -108,8 +128,8 @@ function LabSession({
   const [classifications, setClassifications] = useState<(number | undefined)[]>([]);
   const [hasRun, setHasRun] = useState(false);
   const [interacted, setInteracted] = useState(false);
-  const [result, setResult] = useState<boolean | null>(null);
-  const [hint, setHint] = useState(false);
+  const [result, setResult] = useState<{ ok: boolean; actual: Measurement } | null>(null);
+  const [hintCount, setHintCount] = useState(0);
   const inChallenge = Boolean(activeChallenge);
   const dynamic = isDynamic(model);
   const secret = inChallenge && challenge.id === 'secret';
@@ -119,13 +139,22 @@ function LabSession({
     () => (config.kind === 'collision' ? collisionPlan(config.params) : undefined),
     [config],
   );
+  const oscillator = useMemo(
+    () => (config.kind === 'oscillator' ? createOscillator(config.params) : undefined),
+    [config],
+  );
   let end = Infinity;
   if (config.kind === 'projectile') end = projectileState(config.params, 0).fallTime;
   if (inChallenge && challenge.id === 'projection' && config.kind === 'circular')
     end = circularState(config.params, 0).T / 4;
   if (collision) end = collision.end;
   if (config.kind === 'energy') end = energyState(config.params, 0).end;
+  if (config.kind === 'oscillator')
+    end = activeChallenge?.observeUntil ?? oscillatorObservationTime;
+  if (activeChallenge?.id === 'mass' && config.kind === 'spring')
+    end = springState(config.params, 0).T;
   const sim = useSimulation(speed, end);
+  const oscillation = oscillator?.state(sim.time);
   const completed = Number.isFinite(end) && sim.time >= end;
   const contact = collision?.contact;
   const collided = Boolean(contact && sim.time >= contact.time);
@@ -143,20 +172,28 @@ function LabSession({
     (challenge.id !== 'predict' || numberAnswer! >= 0);
   const needsPrediction = inChallenge && predictionBeforeRun(challenge);
   const ready = !needsPrediction || validAnswer;
-  const concealed = inChallenge && challenge.id === 'predict' && !completed;
+  const predictionLocked = needsPrediction && hasRun;
+  const concealed = needsPrediction && !(collision ? collided : completed);
   const baseline = springState({ m: 0.5, k: 20, A: 0.3 }, 0).T;
   const nonzeroForce = config.kind === 'hooke' && Math.abs(config.params.externalForce) > 1e-9;
-  const canCheck = canCheckChallenge(challenge, {
-    interacted,
-    hasRun,
-    time: sim.time,
-    completed,
-    nonzeroForce,
-    answer: validAnswer ? numberAnswer : undefined,
-    collided,
-    classified: workAngles.every((_, index) => classifications[index] !== undefined),
-  });
-  const stats = readouts(config, sim.time, concealed, collision);
+  const measured = activeChallenge?.measure?.(config, sim.time);
+  const canCheck =
+    inChallenge &&
+    !result &&
+    canCheckChallenge(challenge, {
+      interacted,
+      hasRun,
+      time: sim.time,
+      completed,
+      nonzeroForce,
+      answer: validAnswer ? numberAnswer : undefined,
+      collided,
+      classified: challenge.classification?.every(({ choices }, index) =>
+        choices.some(({ value }) => value === classifications[index]),
+      ),
+      measurementAvailable: measured !== null,
+    });
+  const stats = readouts(config, sim.time, concealed, collision, oscillation);
   let actual = 0;
   switch (config.kind) {
     case 'hooke':
@@ -186,13 +223,15 @@ function LabSession({
       }
       break;
     case 'work':
-      actual = challenge.id === 'work-signs' ? workSignScore(classifications) : work!.work;
+      actual = work!.work;
       break;
     case 'energy':
       actual =
         challenge.id === 'energy-predict' ? incline!.total - incline!.initial : incline!.speed;
       break;
   }
+  if (challenge.classification)
+    actual = classificationScore(challenge.classification, classifications);
 
   function clearAttempt() {
     sim.reset();
@@ -201,7 +240,12 @@ function LabSession({
     setResult(null);
   }
   function changeParameter(key: string, value: number) {
-    if (!Number.isFinite(value) || (inChallenge && !challenge.editable.includes(key)) || !ready)
+    if (
+      !Number.isFinite(value) ||
+      (inChallenge && !challenge.editable.includes(key)) ||
+      !ready ||
+      predictionLocked
+    )
       return;
     clearAttempt();
     setConfig((previous) => updateParameter(previous, key, value));
@@ -212,13 +256,23 @@ function LabSession({
     setConfig(activeChallenge ? initialChallengeConfig(activeChallenge) : defaultConfig(model));
     setPrediction('');
     setClassifications([]);
-    setHint(false);
+    setHintCount(0);
+  }
+  function resetPlayback() {
+    clearAttempt();
+    if (needsPrediction) setPrediction('');
   }
   function changeCollisionKind(kind: string) {
     if (inChallenge || config.kind !== 'collision' || (kind !== 'elastic' && kind !== 'inelastic'))
       return;
     clearAttempt();
     setConfig({ ...config, params: { ...config.params, kind } });
+  }
+  function changeOscillationMode(mode: OscillationMode) {
+    if (inChallenge || config.kind !== 'oscillator') return;
+    clearAttempt();
+    const b = mode === 'resonance' ? Math.max(scanDampingMin, config.params.b) : config.params.b;
+    setConfig({ ...config, params: { ...config.params, mode, b } });
   }
   function togglePlay() {
     if (!ready || !dynamic) return;
@@ -233,8 +287,16 @@ function LabSession({
   }
   function check() {
     if (!canCheck) return;
-    const measured = challenge.id === 'mass' ? actual / baseline : actual;
-    setResult(validateChallenge(challenge, measured, validAnswer ? numberAnswer : undefined));
+    const measurement = measured ?? { value: challenge.id === 'mass' ? actual / baseline : actual };
+    setResult({
+      ok: validateChallenge(
+        challenge,
+        measurement.value,
+        validAnswer ? numberAnswer : undefined,
+        measurement.angle,
+      ),
+      actual: measurement,
+    });
     sim.setRunning(false);
   }
   let status = dynamic
@@ -249,11 +311,17 @@ function LabSession({
               ? end === OBSERVATION_TIME
                 ? 'Hết thời gian quan sát'
                 : 'Đã tới biên quan sát'
-              : 'Đã đến mốc T/4'
+              : config.kind === 'oscillator'
+                ? 'Hết thời gian quan sát'
+                : challenge.id === 'mass'
+                  ? 'Đã đo một chu kỳ'
+                  : 'Đã đến mốc T/4'
         : sim.time > 0
           ? 'Đã tạm dừng'
           : 'Sẵn sàng khám phá'
-    : 'Cân bằng tĩnh';
+    : model === 'hooke'
+      ? 'Cân bằng tĩnh'
+      : 'Minh họa tương tác';
   if (config.kind === 'torque') {
     const s = torqueState(config.params);
     status = s.balanced
@@ -263,6 +331,7 @@ function LabSession({
         : 'Xu hướng quay ↷';
   }
   if (work) status = work.sign === 0 ? 'Công bằng 0' : work.sign > 0 ? 'Công dương' : 'Công âm';
+  const hideResonancePeak = Boolean(activeChallenge?.hideResonancePeak && !result);
   let progressMessage = canCheck
     ? 'Đã đủ điều kiện. Bấm Kiểm tra kết quả để đối chiếu.'
     : 'Chạy mô phỏng rồi kiểm tra kết quả.';
@@ -275,8 +344,12 @@ function LabSession({
     progressMessage = 'Điều chỉnh cánh tay đòn bên phải rồi kiểm tra.';
   else if (challenge.id === 'work-target' && !interacted)
     progressMessage = 'Điều chỉnh tham số của lực rồi kiểm tra.';
-  else if (challenge.id === 'work-signs' && !canCheck)
-    progressMessage = 'Chọn dấu của công ở cả ba tình huống.';
+  else if (challenge.classification && !canCheck)
+    progressMessage = 'Chọn đáp án cho cả ba tình huống.';
+  else if (challenge.checkWhen === 'adjusted' && !interacted)
+    progressMessage = 'Thay đổi thông số được mở khóa rồi kiểm tra.';
+  else if (measured === null)
+    progressMessage = 'Chọn b trong miền 0 < b < 2√(mk) để có đường bao tắt dần hợp lệ.';
   else if (needsPrediction && !validAnswer)
     progressMessage = 'Chọn hoặc nhập dự đoán trước khi chạy mô phỏng.';
   else if (collision && hasRun && !collided)
@@ -290,7 +363,11 @@ function LabSession({
           ? 'Chờ vật chạm đất để kiểm tra.'
           : model === 'energy'
             ? 'Chờ vật tới chân dốc để kiểm tra.'
-            : 'Mô phỏng sẽ tự dừng chính xác tại T/4.';
+            : challenge.observeUntil
+              ? `Chờ tới t = ${challenge.observeUntil} s để đo đường bao.`
+              : challenge.id === 'mass'
+                ? 'Chờ mô phỏng chạy đủ một chu kỳ.'
+                : 'Mô phỏng sẽ tự dừng chính xác tại T/4.';
 
   return (
     <>
@@ -314,7 +391,7 @@ function LabSession({
           </h1>
           <p>{dynamic ? item.description : `${staticDescription}.`}</p>
         </div>
-        {dynamic ? (
+        {dynamic && !activeChallenge?.classification ? (
           <button
             className="lab-presentation-button"
             aria-pressed={presenting}
@@ -369,21 +446,29 @@ function LabSession({
           }}
           prediction={prediction}
           onPrediction={(value) => {
-            setPrediction(value);
-            setResult(null);
+            if (!predictionLocked) {
+              setPrediction(value);
+              setResult(null);
+            }
           }}
-          hasRun={hasRun}
+          predictionLocked={predictionLocked}
           result={result}
-          hint={hint}
-          onHint={() => setHint(!hint)}
+          hintCount={hintCount}
+          onHint={() =>
+            setHintCount((count) =>
+              count === 1 + (challenge.extraHints?.length ?? 0) ? 0 : count + 1,
+            )
+          }
           onCheck={check}
           onRetry={restoreDefaults}
           canCheck={canCheck}
           actual={actual}
           baseline={baseline}
+          concealed={concealed}
           progressMessage={progressMessage}
           classifications={classifications}
           onClassify={(index, value) => {
+            if (result) return;
             setClassifications((current) => {
               const next = [...current];
               next[index] = value;
@@ -393,7 +478,7 @@ function LabSession({
           }}
         />
       )}
-      {activeChallenge?.id !== 'work-signs' && (
+      {!activeChallenge?.classification && (
         <div className="lab-grid">
           <div className="main-column">
             <section className="simulation-card card">
@@ -402,7 +487,11 @@ function LabSession({
                   <span className="live-dot" />
                   <h2>{item.title}</h2>
                   <span className="dimension-label">
-                    {model === 'collision' ? '1D' : dynamic ? '2D' : 'TĨNH'}
+                    {model === 'collision' || model === 'oscillator'
+                      ? '1D'
+                      : dynamic
+                        ? '2D'
+                        : 'TĨNH'}
                   </span>
                 </div>
                 <span className={`status-badge ${sim.running ? 'running' : ''}`} role="status">
@@ -410,6 +499,26 @@ function LabSession({
                   {status}
                 </span>
               </div>
+              {config.kind === 'oscillator' && (
+                <label className="control-choice oscillator-mode">
+                  Chế độ dao động
+                  <select
+                    value={config.params.mode}
+                    disabled={inChallenge}
+                    onChange={(event) => {
+                      const mode = event.target.value;
+                      if (mode === 'damped' || mode === 'driven' || mode === 'resonance')
+                        changeOscillationMode(mode);
+                    }}
+                  >
+                    {Object.entries(oscillationModes).map(([mode, label]) => (
+                      <option key={mode} value={mode}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
               <div className="canvas-wrap">
                 {model !== 'circular' && (
                   <div className="canvas-label">
@@ -438,6 +547,8 @@ function LabSession({
                   target={inChallenge && challenge.id === 'target' ? challenge.target : undefined}
                   revealRange={!concealed}
                   collision={collision}
+                  oscillator={oscillator}
+                  observationEnd={oscillator ? end : undefined}
                 />
               </div>
               {dynamic ? (
@@ -448,7 +559,7 @@ function LabSession({
                   ready={ready}
                   speed={speed}
                   onPlay={togglePlay}
-                  onReset={clearAttempt}
+                  onReset={resetPlayback}
                   onSpeed={setSpeed}
                 />
               ) : (
@@ -475,6 +586,25 @@ function LabSession({
                     <i className="blue-dot" />a hướng tâm
                   </span>
                   <span>Độ dài vector được scale để quan sát.</span>
+                </div>
+              )}
+              {config.kind === 'oscillator' && (
+                <div className="vector-legend oscillator-legend">
+                  <span>
+                    <i className="blue-dot" />
+                    Lực đàn hồi
+                  </span>
+                  <span>
+                    <i className="purple-dot" />
+                    Lực cản
+                  </span>
+                  {config.params.mode !== 'damped' && (
+                    <span>
+                      <i className="gold-dot" />
+                      Lực kích thích
+                    </span>
+                  )}
+                  <span>Các vector lực dùng chung tỉ lệ trong mỗi khung hình.</span>
                 </div>
               )}
             </section>
@@ -507,7 +637,7 @@ function LabSession({
                 </span>
               </div>
             )}
-            {config.kind === 'spring' && (
+            {config.kind === 'spring' && !concealed && (
               <div className="projection-readout">
                 <span>
                   Tần số{' '}
@@ -519,18 +649,65 @@ function LabSession({
                 </span>
               </div>
             )}
-            {analysis
-              ? !presenting && analysis
-              : model !== 'work' && (
-                  <Graph
-                    config={config}
-                    time={sim.time}
-                    subscribe={sim.subscribe}
-                    concealed={concealed}
-                    secret={secret}
-                  />
+            {config.kind === 'oscillator' && oscillator && oscillation && (
+              <div className="projection-readout oscillator-readout">
+                {config.params.mode === 'damped' ? (
+                  <span>
+                    Chế độ tự do <strong>{regimeLabels[oscillator.regime]}</strong>
+                  </span>
+                ) : (
+                  <span>
+                    Lực kích thích <strong>{format(oscillation.drivingForce)} N</strong>
+                  </span>
                 )}
-            <TheoryPanel config={config} time={sim.time} />
+                <span>
+                  Lực cản <strong>{format(oscillation.dampingForce)} N</strong>
+                </span>
+                {config.params.mode === 'damped' && oscillator.regime === 'under' && (
+                  <span>
+                    Đường bao A(t) <strong>{format(oscillation.envelope!)} m</strong>
+                  </span>
+                )}
+                {oscillator.amplitude !== null && (
+                  <span>
+                    Biên độ xác lập X <strong>{format(oscillator.amplitude)} m</strong>
+                  </span>
+                )}
+                <span>
+                  Tần số riêng ω₀ <strong>{format(oscillator.omega0, 2)} rad/s</strong>
+                </span>
+              </div>
+            )}
+            {analysis ? (
+              !presenting && analysis
+            ) : config.kind === 'oscillator' && oscillator ? (
+              <OscillatorGraphs
+                oscillator={oscillator}
+                params={config.params}
+                end={end}
+                time={sim.time}
+                subscribe={sim.subscribe}
+                hideScan={hideResonancePeak}
+              />
+            ) : (
+              ['hooke', 'torque', 'spring', 'circular', 'projectile'].includes(model) && (
+                <Graph
+                  config={config}
+                  time={sim.time}
+                  subscribe={sim.subscribe}
+                  concealed={concealed}
+                  secret={secret}
+                />
+              )
+            )}
+            {!concealed && (
+              <TheoryPanel
+                config={config}
+                time={sim.time}
+                oscillator={oscillator}
+                hideResonancePeak={hideResonancePeak}
+              />
+            )}
           </div>
           <div className="side-column">
             {presenting && analysis}
@@ -542,7 +719,7 @@ function LabSession({
               onDefaults={restoreDefaults}
               display={display}
               onDisplay={(key, value) => setDisplay((old) => ({ ...old, [key]: value }))}
-              predictionLocked={!ready}
+              predictionLocked={!ready || predictionLocked}
               note={assumptions[model]}
             >
               {config.kind === 'collision' && (

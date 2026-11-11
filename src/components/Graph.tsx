@@ -30,6 +30,7 @@ export default function Graph(p: Props) {
   const start = c.kind === 'projectile' ? 0 : Math.floor(p.time / duration) * duration;
 
   const plot = useMemo(() => {
+    if (c.kind !== 'spring' && c.kind !== 'circular' && c.kind !== 'projectile') return null;
     let title = '',
       unit = '',
       max = 1,
@@ -58,24 +59,25 @@ export default function Graph(p: Props) {
     }
     const px = (time: number) => 72 + Math.max(0, Math.min(1, (time - start) / duration)) * 630;
     const py = (value: number) => 186 - ((value - min) / (max - min)) * 144;
-    const path = Array.from({ length: 241 }, (_, i) => {
-      const time = start + (duration * i) / 240;
-      return `${i ? 'L' : 'M'}${px(time).toFixed(2)},${py(sample(time)).toFixed(2)}`;
-    }).join(' ');
+    const path = p.concealed
+      ? ''
+      : Array.from({ length: 241 }, (_, i) => {
+          const time = start + (duration * i) / 240;
+          return `${i ? 'L' : 'M'}${px(time).toFixed(2)},${py(sample(time)).toFixed(2)}`;
+        }).join(' ');
     return { title, unit, max, min, px, py, path, sample };
-  }, [c, quantity, duration, start]);
+  }, [c, quantity, duration, start, p.concealed]);
 
-  useEffect(
-    () =>
-      p.subscribe((time) => {
-        const x = plot.px(time);
-        marker.current?.setAttribute('cx', String(x));
-        marker.current?.setAttribute('cy', String(plot.py(plot.sample(time))));
-        cursor.current?.setAttribute('x1', String(x));
-        cursor.current?.setAttribute('x2', String(x));
-      }),
-    [p.subscribe, plot],
-  );
+  useEffect(() => {
+    if (!plot || p.concealed) return;
+    return p.subscribe((time) => {
+      const x = plot.px(time);
+      marker.current?.setAttribute('cx', String(x));
+      marker.current?.setAttribute('cy', String(plot.py(plot.sample(time))));
+      cursor.current?.setAttribute('x1', String(x));
+      cursor.current?.setAttribute('x2', String(x));
+    });
+  }, [p.subscribe, plot, p.concealed]);
 
   if (c.kind === 'torque') {
     const s = torqueState(c.params),
@@ -197,6 +199,7 @@ export default function Graph(p: Props) {
       </section>
     );
   }
+  if (!plot) return null;
   return (
     <section className="graph-card card">
       <div className="graph-heading">
@@ -223,7 +226,7 @@ export default function Graph(p: Props) {
       </div>
       {p.concealed ? (
         <div className="graph-concealed">
-          Nhập dự đoán và chạy đến khi chạm đất để quan sát kết quả.
+          Khóa dự đoán bằng cách bắt đầu. Đồ thị xuất hiện khi mô phỏng tới mốc kiểm chứng.
         </div>
       ) : (
         <svg

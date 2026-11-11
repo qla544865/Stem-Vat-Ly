@@ -2979,3 +2979,48 @@ footer {
     margin-left: 0;
   }
 }
+
+.oscillator-legend .blue-dot {
+  background: #2678ad;
+}
+.oscillator-legend .purple-dot {
+  background: #8856ad;
+}
+.oscillator-legend .gold-dot {
+  background: #a56725;
+}
+.oscillator-readout {
+  color: #506859;
+}
+.oscillator-mode {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  padding: 8px 16px;
+  margin: 0;
+  font-size: 12px;
+  border-top: 1px solid var(--border);
+}
+.scenario-classifications label {
+  flex: 1 1 100%;
+  min-width: 0;
+  font-size: 13px;
+}
+.scenario-classifications select {
+  width: 100%;
+  max-width: 400px;
+}
+.phase3-graph {
+  height: auto;
+  min-height: 0;
+}
+.phase3-graph text {
+  fill: #506859;
+}
+.response-markers {
+  padding-inline: 0;
+  gap: 7px 16px;
+  color: #506859;
+  font-size: 12px;
+}

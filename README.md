@@ -5,4 +5,4 @@ Xem web tại: [PhyLAB](https://phylab-stem-vat-ly-c5.qla544865.workers.dev/)
 
 Readme: [README_.md](README_.md)
 
-Phase 2 có ba khu vực **Lý thuyết**, **Thí nghiệm** và **Challenge Lab**, với các bài mới về va chạm, công của lực và bảo toàn cơ năng. Xem [hướng dẫn demo và kiểm chứng](HANDOVER.md).
+Phase 3 bổ sung dao động nâng cao, tổng hợp và phân tích lực, công suất, hiệu suất. Challenge Lab có 21 bài thuộc ba loại Đạt mục tiêu, Dự đoán và Điều tra. Xem [hướng dẫn demo và kết quả kiểm chứng](HANDOVER.md).

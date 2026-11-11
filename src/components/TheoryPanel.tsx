@@ -12,6 +12,8 @@ import {
 } from '../simulations/collision/physics.ts';
 import type { CollisionPlan } from '../simulations/collision/physics.ts';
 import { energyState, workState } from '../simulations/energy/physics.ts';
+import type { Oscillator } from '../simulations/oscillator/physics.ts';
+import { averagePower, efficiencyState, forceState } from '../simulations/interactive/physics.ts';
 import Icon from './Icon';
 
 export const format = (value: number, digits = 3) =>
@@ -26,6 +28,14 @@ export const assumptions = {
     'Ray ngang không ma sát. Chiều dương sang phải. Quan sát tối đa 10 s hoặc đến khi một xe chạm biên ray.',
   work: 'Lực không đổi trên độ dời đã cho. Chỉ tính công của lực đang xét, với chiều độ dời sang phải.',
   energy: 'Vật thả từ nghỉ, dốc cố định, bỏ qua lực cản và ma sát. Mốc thế năng ở chân dốc.',
+  oscillator:
+    'Lò xo tuyến tính, cản nhớt theo vận tốc, chuyển động ngang. Mỗi lần chạy bắt đầu từ x₀ với v₀ = 0.',
+  forces:
+    'Hai lực đồng quy tại O. Ox hướng sang phải, Oy hướng lên. Góc dương ngược chiều kim đồng hồ từ Ox.',
+  power:
+    'Hai máy thực hiện cùng công A. Dùng công suất trung bình trong khoảng thời gian hoàn thành công.',
+  efficiency:
+    'Công đầu vào bằng công có ích cộng công hao phí. Các thanh dùng chung thang đo theo J.',
 };
 export const learningTips = {
   hooke: 'Giữ nguyên ngoại lực, tăng độ cứng. Độ biến dạng của lò xo thay đổi thế nào?',
@@ -37,6 +47,11 @@ export const learningTips = {
   collision: 'Đổi từ va chạm đàn hồi sang va chạm mềm. Đại lượng nào vẫn giữ nguyên?',
   work: 'Thử góc 90°, rồi đổi sang góc tù. Dấu của công thay đổi thế nào?',
   energy: 'Giữ nguyên độ cao và đổi góc dốc. So sánh thời gian trượt và vận tốc ở chân dốc.',
+  oscillator:
+    'So sánh ω₀ với vị trí đỉnh khi tăng lực cản. Lực cản lớn ảnh hưởng thế nào đến đáp ứng?',
+  forces: 'Thử đặt hai lực bằng nhau rồi thay đổi góc giữa chúng. Khi nào hợp lực triệt tiêu?',
+  power: 'Giữ công không đổi rồi giảm thời gian nâng xuống một nửa. Công suất thay đổi thế nào?',
+  efficiency: 'Giữ công có ích cố định rồi tăng công đầu vào. Phần hao phí thay đổi thế nào?',
 };
 
 export function readouts(
@@ -44,6 +59,7 @@ export function readouts(
   time: number,
   concealed: boolean,
   collision?: CollisionPlan,
+  oscillation?: ReturnType<Oscillator['state']>,
 ) {
   const item = (
     label: string,
@@ -65,12 +81,14 @@ export function readouts(
     }
     case 'spring': {
       const s = springState(config.params, time);
-      return [
+      const stats = [
         item('Li độ', 'x', s.x, 'm', 'teal'),
         item('Vận tốc', 'v', s.v, 'm/s', 'gold'),
         item('Gia tốc', 'a', s.a, 'm/s²', 'blue'),
         item('Chu kỳ', 'T', s.T, 's', 'purple'),
       ];
+      if (concealed) stats[3].value = '—';
+      return stats;
     }
     case 'torque': {
       const s = torqueState(config.params);
@@ -125,15 +143,56 @@ export function readouts(
         item('Gia tốc dọc dốc', 'a', s.acceleration, 'm/s²', 'teal', 2),
       ];
     }
+    case 'oscillator': {
+      const s = oscillation!;
+      return [
+        item('Li độ', 'x', s.x, 'm', 'teal'),
+        item('Vận tốc', 'v', s.v, 'm/s', 'gold'),
+        item('Cơ năng', 'E', s.energy, 'J', 'blue'),
+        item('Hệ số cản', 'b', config.params.b, 'N·s/m', 'purple', 1),
+      ];
+    }
+    case 'forces': {
+      const s = forceState(config.params);
+      const angle = item('Hướng hợp lực', 'α', s.angle ?? 0, '°', 'purple', 1);
+      if (s.angle === null) {
+        angle.value = '—';
+        angle.unit = '';
+      }
+      return [
+        item('Thành phần ngang', 'Rₓ', s.x, 'N', 'blue', 2),
+        item('Thành phần đứng', 'Rᵧ', s.y, 'N', 'gold', 2),
+        item('Độ lớn hợp lực', 'R', s.magnitude, 'N', 'teal', 2),
+        angle,
+      ];
+    }
+    case 'power': {
+      const { work, t1, t2 } = config.params;
+      return [
+        item('Công suất máy A', 'P₁', averagePower(work, t1), 'W', 'teal', 2),
+        item('Công suất máy B', 'P₂', averagePower(work, t2), 'W', 'blue', 2),
+      ];
+    }
+    case 'efficiency': {
+      const s = efficiencyState(config.params);
+      return [
+        item('Hiệu suất', 'H', s.percent, '%', 'teal', 2),
+        item('Công hao phí', 'Aₕ', s.lost, 'J', 'gold', 0),
+      ];
+    }
   }
 }
 
 export default function TheoryPanel({
   config: c,
   time,
+  oscillator,
+  hideResonancePeak,
 }: {
   config: SimulationConfig;
   time: number;
+  oscillator?: Oscillator;
+  hideResonancePeak?: boolean;
 }) {
   let formula: ReactNode = '';
   let explanation = '';
@@ -257,6 +316,73 @@ export default function TheoryPanel({
         'v tại chân dốc = √(2gh₀)',
         `W = mgh₀ = ${format(s.initial, 2)} J`,
         'h là độ cao hiện tại so với chân dốc, h₀ là độ cao ban đầu.',
+      ];
+      break;
+    }
+    case 'oscillator': {
+      const { mode, b, m, k, omega } = c.params;
+      const { omega0 } = oscillator!;
+      formula = mode === 'damped' ? 'mx″ + bx′ + kx = 0' : 'mx″ + bx′ + kx = F₀ cos(Ωt)';
+      explanation =
+        mode === 'damped'
+          ? b === 0
+            ? 'Hệ dao động tự do với cơ năng không đổi vì lực đàn hồi là lực duy nhất theo phương chuyển động.'
+            : 'Lực cản ngược chiều vận tốc và làm giảm cơ năng. Chuyển động qua lại chỉ xảy ra dưới ngưỡng tắt dần tới hạn.'
+          : b > 0
+            ? 'Li độ thực gồm thành phần quá độ do điều kiện đầu và thành phần xác lập do lực kích thích. Quá độ suy giảm theo thời gian.'
+            : Math.abs(omega - omega0) < 1e-9
+              ? 'Trong mô hình không cản tại Ω = ω₀, biên độ tăng theo thời gian và không có biên độ xác lập hữu hạn.'
+              : 'Khi b = 0, thành phần dao động tự do tồn tại cùng thành phần cưỡng bức. Hệ không tiến tới một đáp ứng xác lập duy nhất.';
+      equations = [
+        `ω₀ = √(k/m) = ${format(omega0)} rad/s`,
+        `b tới hạn = 2√(mk) = ${format(2 * Math.sqrt(m * k))} N·s/m`,
+        'Fđh = −kx · Fc = −bv · E = ½mv² + ½kx²',
+      ];
+      if (mode !== 'damped' && omega === 0)
+        equations.push('Tại Ω = 0, lực kích thích không đổi và vị trí cân bằng dịch tới F₀/k.');
+      if (mode === 'damped' && oscillator!.regime === 'under')
+        equations.push('ωd = √(k/m − (b/2m)²) · A(t) = x₀√(1 + (b/2mωd)²) e⁻ᵇᵗ⁄²ᵐ');
+      if (mode !== 'damped' && b > 0) equations.push('X(Ω) = F₀ / √((k − mΩ²)² + (bΩ)²)');
+      if (mode === 'resonance' && !hideResonancePeak)
+        equations.push('Ω đỉnh = √(k/m − b²/(2m²)) khi biểu thức dưới căn dương.');
+      break;
+    }
+    case 'forces': {
+      const s = forceState(c.params);
+      formula = 'R⃗ = F⃗₁ + F⃗₂';
+      explanation =
+        s.angle === null
+          ? 'Hai lực cân bằng. Hợp lực bằng 0 nên hướng không xác định.'
+          : 'Hợp lực là đường chéo hình bình hành. Cộng các thành phần có dấu trên mỗi trục để tìm độ lớn và hướng.';
+      equations = [
+        `F₁ₓ = ${format(s.first.x, 2)} N · F₁ᵧ = ${format(s.first.y, 2)} N`,
+        `F₂ₓ = ${format(s.second.x, 2)} N · F₂ᵧ = ${format(s.second.y, 2)} N`,
+        'Rₓ = F₁ₓ + F₂ₓ · Rᵧ = F₁ᵧ + F₂ᵧ',
+        'R = √(Rₓ² + Rᵧ²) · α = atan2(Rᵧ, Rₓ)',
+      ];
+      break;
+    }
+    case 'power': {
+      const { work, t1, t2 } = c.params;
+      formula = 'P = A/t';
+      explanation =
+        'Công suất trung bình cho biết lượng công thực hiện trong một đơn vị thời gian. Với cùng công A, máy hoàn thành nhanh hơn có công suất lớn hơn.';
+      equations = [
+        `A₁ = A₂ = ${work} J`,
+        `P₁ = ${work} J / ${t1} s = ${format(averagePower(work, t1), 2)} W`,
+        `P₂ = ${work} J / ${t2} s = ${format(averagePower(work, t2), 2)} W`,
+        '1 W = 1 J/s · t > 0',
+      ];
+      break;
+    }
+    case 'efficiency': {
+      const { input, useful } = c.params;
+      formula = 'H = (Aᵢ / Aᵥ) × 100%';
+      explanation =
+        'Một phần công đầu vào nâng vật, phần còn lại hao phí. Mô hình lý tưởng đạt 100% khi công hao phí bằng 0.';
+      equations = [
+        `Aₕ = Aᵥ − Aᵢ = ${input} J − ${useful} J = ${input - useful} J`,
+        '0 ≤ Aᵢ ≤ Aᵥ · Aᵥ > 0',
       ];
       break;
     }

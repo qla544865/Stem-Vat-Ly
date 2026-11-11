@@ -3,14 +3,21 @@ import type { ProjectileParams } from '../simulations/projectile/physics.ts';
 import type { HookeParams } from '../simulations/spring/hooke.ts';
 import type { TorqueParams } from '../simulations/torque/physics.ts';
 import type { CircularParams } from '../simulations/circular/physics.ts';
-import type { Model } from '../simulations/catalog.ts';
+import type { Model, SimulationConfig } from '../simulations/catalog.ts';
 import { collisionDefaults } from '../simulations/collision/physics.ts';
 import type { CollisionParams } from '../simulations/collision/physics.ts';
 import { energyDefaults, workDefaults, workState } from '../simulations/energy/physics.ts';
 import type { EnergyParams, WorkParams } from '../simulations/energy/physics.ts';
+import type { OscillatorParams } from '../simulations/oscillator/physics.ts';
+import type {
+  EfficiencyParams,
+  ForceParams,
+  PowerParams,
+} from '../simulations/interactive/physics.ts';
+import { angularError } from '../simulations/interactive/physics.ts';
+import { phase3Challenges } from './phase3.ts';
 
-export type Experiment =
-  'spring' | 'projectile' | 'torque' | 'circular' | 'collision' | 'work' | 'energy';
+export type Experiment = Exclude<Model, 'hooke'>;
 export type ChallengeId =
   | 'period'
   | 'mass'
@@ -26,7 +33,30 @@ export type ChallengeId =
   | 'work-target'
   | 'work-signs'
   | 'energy-height'
-  | 'energy-predict';
+  | 'energy-predict'
+  | 'damping-envelope'
+  | 'resonance-frequency'
+  | 'oscillation-phenomena'
+  | 'force-resultant'
+  | 'power-time'
+  | 'efficiency-target';
+
+export type ChallengeType = 'target' | 'prediction' | 'investigation';
+export const challengeTypeLabels: Record<ChallengeType, string> = {
+  target: 'Đạt mục tiêu',
+  prediction: 'Dự đoán',
+  investigation: 'Điều tra',
+};
+export interface Classification {
+  label: string;
+  choices: { value: number; label: string }[];
+  correct: number;
+}
+export interface Measurement {
+  value: number;
+  angle?: number | null;
+}
+
 export interface Challenge {
   id: ChallengeId;
   experiment: Experiment;
@@ -34,6 +64,7 @@ export interface Challenge {
   title: string;
   description: string;
   hint: string;
+  extraHints?: [string] | [string, string];
   explanation: string;
   editable: string[];
   initial:
@@ -44,11 +75,24 @@ export interface Challenge {
     | CircularParams
     | CollisionParams
     | WorkParams
-    | EnergyParams;
+    | EnergyParams
+    | OscillatorParams
+    | ForceParams
+    | PowerParams
+    | EfficiencyParams;
   target: number;
   tolerance: number;
   goalLabel?: string;
   goalDisplay?: string;
+  unit?: string;
+  type?: ChallengeType;
+  rule?: 'below';
+  checkWhen?: 'adjusted' | 'classified';
+  observeUntil?: number;
+  directionTarget?: { angle: number; tolerance: number };
+  hideResonancePeak?: boolean;
+  measure?: (config: SimulationConfig, time: number) => Measurement | null;
+  classification?: Classification[];
   answer?: {
     label: string;
     unit?: string;
@@ -58,13 +102,25 @@ export interface Challenge {
 }
 
 export const workAngles = [30, 90, 150];
+const workClassifications = workAngles.map((angle) => ({
+  label: `Góc ${angle}°`,
+  choices: [
+    { value: 1, label: 'Công dương' },
+    { value: 0, label: 'Công bằng 0' },
+    { value: -1, label: 'Công âm' },
+  ],
+  correct: workState({ force: 10, displacement: 5, alpha: (angle * Math.PI) / 180 }).sign,
+}));
+
+export function classificationScore(
+  questions: Classification[],
+  answers: readonly (number | undefined)[],
+) {
+  return questions.filter(({ correct }, index) => correct === answers[index]).length;
+}
 
 export function workSignScore(answers: readonly (number | undefined)[]) {
-  return workAngles.filter(
-    (angle, index) =>
-      workState({ force: 10, displacement: 5, alpha: (angle * Math.PI) / 180 }).sign ===
-      answers[index],
-  ).length;
+  return classificationScore(workClassifications, answers);
 }
 export const challenges: Challenge[] = [
   {
@@ -80,6 +136,8 @@ export const challenges: Challenge[] = [
     initial: { k: 80, externalForce: 0 },
     target: 80,
     tolerance: 4,
+    type: 'investigation',
+    unit: 'N/m',
     goalLabel: 'SUY LUẬN TỪ PHÉP ĐO',
     goalDisplay: 'k = ?',
     answer: { label: 'Độ cứng dự đoán', unit: 'N/m' },
@@ -97,6 +155,8 @@ export const challenges: Challenge[] = [
     initial: { m: 1, k: 20, A: 0.3 },
     target: 2,
     tolerance: 0.05,
+    unit: 's',
+    goalDisplay: '2,00 s',
   },
   {
     id: 'mass',
@@ -104,12 +164,26 @@ export const challenges: Challenge[] = [
     title: 'Khối lượng & chu kỳ',
     description:
       'Nếu khối lượng tăng 4 lần và độ cứng giữ nguyên, chu kỳ thay đổi thế nào? Chọn dự đoán, tăng m từ 0,50 lên 2,00 kg rồi chạy để kiểm chứng.',
-    hint: 'Chu kỳ tỉ lệ với căn bậc hai của khối lượng. Hãy tính √4.',
+    hint: 'Giữ độ cứng cố định. Quan sát thời gian để vật trở về cùng vị trí và chiều chuyển động.',
+    extraHints: [
+      'Chu kỳ tỉ lệ với căn bậc hai của khối lượng khi k cố định.',
+      'Lập tỉ số T₂/T₁ từ hai giá trị khối lượng.',
+    ],
     explanation: 'T₂/T₁ = √(m₂/m₁) = √4 = 2. Khối lượng tăng 4 lần thì chu kỳ tăng 2 lần.',
     editable: ['m'],
     initial: { m: 0.5, k: 20, A: 0.3 },
     target: 2,
     tolerance: 0.001,
+    goalDisplay: 'm₂ = 4m₁',
+    answer: {
+      label: 'Dự đoán của bạn',
+      choices: [
+        { value: '1', label: 'Chu kỳ không đổi' },
+        { value: '2', label: 'Chu kỳ tăng 2 lần' },
+        { value: '4', label: 'Chu kỳ tăng 4 lần' },
+        { value: '0.5', label: 'Chu kỳ giảm một nửa' },
+      ],
+    },
   },
   {
     id: 'balance',
@@ -123,6 +197,7 @@ export const challenges: Challenge[] = [
     initial: { F1: 20, d1: 1, F2: 10, d2: 0.8 },
     target: 0,
     tolerance: 0.1,
+    unit: 'N·m',
     goalLabel: 'ĐIỀU KIỆN CÂN BẰNG',
     goalDisplay: 'M₁ = M₂',
   },
@@ -141,6 +216,7 @@ export const challenges: Challenge[] = [
     tolerance: 0.2,
     goalLabel: 'GIA TỐC MỤC TIÊU',
     goalDisplay: '18 m/s²',
+    unit: 'm/s²',
   },
   {
     id: 'projection',
@@ -157,6 +233,7 @@ export const challenges: Challenge[] = [
     tolerance: 1e-8,
     goalLabel: 'MỐC KIỂM CHỨNG',
     goalDisplay: 't = T/4',
+    unit: 'm',
     answer: {
       label: 'Li độ sau ¼ chu kỳ',
       choices: [
@@ -179,11 +256,16 @@ export const challenges: Challenge[] = [
     editable: ['v0'],
     initial: { h: 20, v0: 6, g: 9.81 },
     target: 18,
+    unit: 'm',
+    goalDisplay: '18,00 m',
     tolerance: 0.5,
   },
   {
     id: 'predict',
     experiment: 'projectile',
+    unit: 'm',
+    goalDisplay: 'L = ?',
+    answer: { label: 'Tầm xa dự đoán', unit: 'm', min: 0 },
     title: 'Dự đoán tầm xa',
     description:
       'Với h = 20 m, v₀ = 8 m/s và g = 9,81 m/s², vật sẽ rơi cách bệ phóng bao xa? Nhập dự đoán trước khi chạy. Sai lệch cho phép: 0,50 m.',
@@ -210,6 +292,7 @@ export const challenges: Challenge[] = [
     tolerance: 0.05,
     goalLabel: 'DỰ ĐOÁN CÓ DẤU',
     goalDisplay: 'v₁′ = ?',
+    unit: 'm/s',
     answer: { label: 'Vận tốc xe A sau va chạm', unit: 'm/s', min: -100 },
   },
   {
@@ -227,6 +310,7 @@ export const challenges: Challenge[] = [
     tolerance: 0.05,
     goalLabel: 'SAU VA CHẠM MỀM',
     goalDisplay: '|v′| ≤ 0,05 m/s',
+    unit: 'm/s',
   },
   {
     id: 'collision-conserve',
@@ -243,6 +327,7 @@ export const challenges: Challenge[] = [
     tolerance: 1e-8,
     goalLabel: 'VA CHẠM MỀM',
     goalDisplay: 'So sánh trước / sau',
+    unit: 'kg·m/s',
     answer: {
       label: 'Đại lượng được bảo toàn',
       choices: [
@@ -266,6 +351,7 @@ export const challenges: Challenge[] = [
     tolerance: 0.5,
     goalLabel: 'CÔNG MỤC TIÊU',
     goalDisplay: '100 J',
+    unit: 'J',
   },
   {
     id: 'work-signs',
@@ -279,6 +365,10 @@ export const challenges: Challenge[] = [
     initial: { ...workDefaults },
     target: workAngles.length,
     tolerance: 0,
+    type: 'prediction',
+    classification: workClassifications,
+    checkWhen: 'classified',
+    unit: '/ 3',
     goalLabel: 'BA TÌNH HUỐNG',
     goalDisplay: '30° · 90° · 150°',
   },
@@ -297,6 +387,7 @@ export const challenges: Challenge[] = [
     tolerance: 0.05,
     goalLabel: 'VẬN TỐC CHÂN DỐC',
     goalDisplay: '10 m/s',
+    unit: 'm/s',
   },
   {
     id: 'energy-predict',
@@ -312,6 +403,7 @@ export const challenges: Challenge[] = [
     tolerance: 1e-8,
     goalLabel: 'DỰ ĐOÁN NĂNG LƯỢNG',
     goalDisplay: 'W',
+    unit: 'J',
     answer: {
       label: 'Dự đoán của bạn',
       choices: [
@@ -321,11 +413,25 @@ export const challenges: Challenge[] = [
       ],
     },
   },
+  ...phase3Challenges,
 ];
 
-export function validateChallenge(c: Challenge, actual: number, prediction?: number) {
+export function validateChallenge(
+  c: Challenge,
+  actual: number,
+  prediction?: number,
+  angle?: number | null,
+) {
   if (!Number.isFinite(actual)) return false;
   const within = (difference: number) => Math.abs(difference) <= c.tolerance + 1e-9;
+  if (c.rule === 'below') return actual >= 0 && actual < c.target;
+  if (c.directionTarget && c.target > 1e-9)
+    return (
+      within(actual - c.target) &&
+      angle != null &&
+      Number.isFinite(angle) &&
+      angularError(angle, c.directionTarget.angle) <= c.directionTarget.tolerance + 1e-9
+    );
   if (c.id === 'mass')
     return Number.isFinite(prediction) && prediction === 2 && within(actual - c.target);
   if (c.id === 'predict' || c.id === 'secret' || c.id === 'collision-predict')
@@ -338,14 +444,19 @@ export function validateChallenge(c: Challenge, actual: number, prediction?: num
 
 export const challengeModel = (c: Challenge): Model => c.model ?? c.experiment;
 export const predictionBeforeRun = (c: Challenge) =>
-  [
-    'mass',
-    'predict',
-    'projection',
-    'collision-predict',
-    'collision-conserve',
-    'energy-predict',
-  ].includes(c.id);
+  c.type
+    ? c.type === 'prediction' && !c.classification
+    : [
+        'mass',
+        'predict',
+        'projection',
+        'collision-predict',
+        'collision-conserve',
+        'energy-predict',
+      ].includes(c.id);
+
+export const challengeType = (c: Challenge): ChallengeType =>
+  c.type ?? (predictionBeforeRun(c) ? 'prediction' : 'target');
 
 export interface AttemptEvidence {
   interacted: boolean;
@@ -356,10 +467,15 @@ export interface AttemptEvidence {
   answer?: number;
   collided?: boolean;
   classified?: boolean;
+  measurementAvailable?: boolean;
 }
 
 export function canCheckChallenge(c: Challenge, e: AttemptEvidence) {
   const answered = Number.isFinite(e.answer);
+  if (e.measurementAvailable === false) return false;
+  if (c.checkWhen === 'adjusted') return e.interacted;
+  if (c.checkWhen === 'classified') return e.classified === true;
+  if (c.observeUntil !== undefined) return e.hasRun && e.completed && e.time >= c.observeUntil;
   if (c.id === 'secret') return e.interacted && e.nonzeroForce && answered && e.answer! > 0;
   if (c.id === 'balance') return e.interacted;
   if (c.id === 'work-target') return e.interacted;
@@ -367,7 +483,7 @@ export function canCheckChallenge(c: Challenge, e: AttemptEvidence) {
   if (!e.hasRun || e.time <= 0) return false;
   if (predictionBeforeRun(c) && !answered) return false;
   if (c.experiment === 'collision') return e.collided === true;
-  if (c.experiment === 'energy' || ['target', 'predict', 'projection'].includes(c.id))
+  if (c.experiment === 'energy' || ['target', 'predict', 'projection', 'mass'].includes(c.id))
     return e.completed;
   return true;
 }
