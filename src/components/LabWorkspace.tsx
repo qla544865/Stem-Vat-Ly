@@ -46,6 +46,9 @@ import Icon from './Icon';
 import CatalogSelect from './CatalogSelect';
 import { CollisionAnalysis, EnergyBars } from './LabAnalysis';
 import OscillatorGraphs from './OscillatorGraphs';
+import GuidedTour from './GuidedTour';
+import DemoScenarios from './DemoScenarios';
+import { challengeTour, tourFor } from '../tours/config.ts';
 
 const oscillationModes: Record<OscillationMode, string> = {
   damped: 'Tắt dần',
@@ -119,6 +122,10 @@ function LabSession({
   presenting,
   onPresentation,
 }: SessionProps) {
+  const tour = useMemo(
+    () => (activeChallenge ? challengeTour : tourFor(model)),
+    [model, activeChallenge],
+  );
   const available = challenges.filter((c) => challengeModel(c) === model);
   const challenge = activeChallenge ?? available[0];
   const [config, setConfig] = useState(() =>
@@ -369,6 +376,27 @@ function LabSession({
                 ? 'Chờ mô phỏng chạy đủ một chu kỳ.'
                 : 'Mô phỏng sẽ tự dừng chính xác tại T/4.';
 
+  const oscillatorModeControl = config.kind === 'oscillator' && (
+    <label className="control-choice oscillator-mode">
+      Chế độ dao động
+      <select
+        value={config.params.mode}
+        disabled={inChallenge}
+        onChange={(event) => {
+          const mode = event.target.value;
+          if (mode === 'damped' || mode === 'driven' || mode === 'resonance')
+            changeOscillationMode(mode);
+        }}
+      >
+        {Object.entries(oscillationModes).map(([mode, label]) => (
+          <option key={mode} value={mode}>
+            {label}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+
   return (
     <>
       <div className="breadcrumb">
@@ -437,6 +465,24 @@ function LabSession({
           </button>
         </div>
       </nav>
+      <div className="lab-assistance">
+        <GuidedTour
+          tour={tour}
+          context={`${inChallenge}:${presenting}:${config.kind === 'oscillator' ? config.params.mode : ''}`}
+        />
+        {!inChallenge && (
+          <DemoScenarios
+            model={model}
+            onDefaults={restoreDefaults}
+            onLoad={(scenario) => {
+              if (scenario.model === 'pendulum' || scenario.config.kind !== model) return;
+              resetPlayback();
+              setConfig(scenario.config);
+            }}
+          />
+        )}
+        {presenting && oscillatorModeControl}
+      </div>
       {inChallenge && (
         <ChallengePanel
           challenge={challenge}
@@ -499,26 +545,7 @@ function LabSession({
                   {status}
                 </span>
               </div>
-              {config.kind === 'oscillator' && (
-                <label className="control-choice oscillator-mode">
-                  Chế độ dao động
-                  <select
-                    value={config.params.mode}
-                    disabled={inChallenge}
-                    onChange={(event) => {
-                      const mode = event.target.value;
-                      if (mode === 'damped' || mode === 'driven' || mode === 'resonance')
-                        changeOscillationMode(mode);
-                    }}
-                  >
-                    {Object.entries(oscillationModes).map(([mode, label]) => (
-                      <option key={mode} value={mode}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              )}
+              {!presenting && oscillatorModeControl}
               <div className="canvas-wrap">
                 {model !== 'circular' && (
                   <div className="canvas-label">

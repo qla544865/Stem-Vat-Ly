@@ -1,3 +1,5 @@
+import GuidedTour from './GuidedTour';
+import { challengeTour } from '../tours/config.ts';
 import { catalog, categoryLabels, modelsIn, staticDescription } from '../simulations/catalog.ts';
 import type { Category, LabRoute } from '../simulations/catalog.ts';
 import { challengeModel, challenges } from '../challenges/config.ts';
@@ -120,6 +122,7 @@ export default function Home({ area }: { area: Area }) {
             <p className="area-description">{categoryIntro[area]}</p>
           </div>
         </div>
+        {area === 'challenges' && <GuidedTour tour={challengeTour} />}
         {area === 'challenges' ? (
           (Object.keys(categoryLabels) as Category[]).map((category) => (
             <section

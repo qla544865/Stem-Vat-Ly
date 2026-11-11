@@ -25,6 +25,9 @@ import PendulumResults, { Conclusion, PendulumTable } from './PendulumResults';
 import ControlPanel from './ControlPanel';
 import CatalogSelect from './CatalogSelect';
 import Icon from './Icon';
+import GuidedTour from './GuidedTour';
+import DemoScenarios from './DemoScenarios';
+import { pendulumTour } from '../tours/config.ts';
 
 const views = { sandbox: 'Sandbox', practice: 'Thực hành', results: 'Kết quả & đồ thị' } as const;
 type View = keyof typeof views;
@@ -237,6 +240,27 @@ export default function PendulumLab({
         <CatalogSelect model="pendulum" className="pendulum-secondary" />
       </nav>
 
+      <div className="lab-assistance">
+        <GuidedTour tour={pendulumTour} context={`${view}:${presenting}`} onNavigate={openView} />
+        <DemoScenarios
+          model="pendulum"
+          onDefaults={() => {
+            setView('sandbox');
+            setSimulationView('sandbox');
+            updateSandbox(pendulumDefaults);
+          }}
+          onLoad={(scenario) => {
+            if (scenario.model !== 'pendulum') return;
+            const next = scenario.practice ? 'practice' : 'sandbox';
+            setView(next);
+            setSimulationView(next);
+            if (scenario.practice) {
+              setTrial({ ...scenario.practice, side: 1 });
+              replaceRun(scenario.params);
+            } else updateSandbox(scenario.params);
+          }}
+        />
+      </div>
       {view === 'results' ? (
         <PendulumResults results={results} notes={notes} onReset={() => clearResults()} />
       ) : (

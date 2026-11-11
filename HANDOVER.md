@@ -1,3 +1,51 @@
+# PHYLAB — BÀN GIAO PHASE 4
+
+**Ngày lập:** 11/11/2026 · **Phiên bản:** `1.0.0-rc.1` · **Trạng thái:** Bản nghiệm thu local, chưa phát hành công khai.
+
+## Phạm vi
+
+- **4A:** Tour 7 bước cho con lắc; 4 bước cho 6 mô phỏng động còn lại; 3 bước cho 6 minh họa tĩnh; 5 bước dùng chung cho Challenge Lab. Lời mời không tự mở dialog. Có quay lại, tiếp theo, hoàn thành, bỏ qua, mở lại và Escape. Khi rời bàn hoặc đổi chế độ bên ngoài tour, dialog và highlight được dọn; riêng nút chuyển tab trong tour con lắc giữ bước đang đọc.
+- **4B:** Trình chiếu dùng lại Canvas, bảng số liệu, đồ thị, tham số và bộ điều khiển. Thu gọn giải thích phụ, tăng cỡ số liệu chính, giữ nút thoát và điều chỉnh chiều cao Canvas ở màn hình thấp. Có 9 demo cho con lắc, va chạm, cơ năng và dao động nâng cao. Nạp demo dùng reset hiện có; không tự chạy, chấm Challenge hay ghi sổ tay.
+- **4C:** [Kế hoạch đánh giá](docs/evaluation-plan.md), [phiếu Likert 1–5](docs/evaluation-form.md), [mẫu tổng hợp](docs/evaluation-results-template.md). Có nhiệm vụ quan sát, cách ghi thời gian và mức hoàn thành, quy tắc Critical–Low. Chưa thử với học sinh/giáo viên; không có số liệu hoặc kết luận về kết quả học tập.
+- **4D:** Kiểm tra nền Phase 3, regression, build tĩnh và chuẩn bị [checklist phát hành](docs/release-checklist.md). Catalog Phase 3 và 21 Challenge đều có trong mã. Nghiệm thu sư phạm và máy chiếu thực vẫn là phần việc còn lại. Không thêm mô hình, backend hoặc dependency.
+
+## Tệp và cách mở rộng
+
+| Tệp                                                                                | Trách nhiệm                                                                                      |
+| ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `src/tours/config.ts`, `src/components/GuidedTour.tsx`                             | Dữ liệu theo ID/phiên bản, cờ đã xem, bước, focus và đánh dấu mục tiêu                           |
+| `src/simulations/scenarios.ts`, `src/components/DemoScenarios.tsx`                 | Bộ tham số SI, nội dung demo, chọn/nạp và khôi phục mặc định                                     |
+| `src/components/Home.tsx`, `LabWorkspace.tsx`, `PendulumLab.tsx`, `src/styles.css` | Gắn tour vào catalog/bàn học, nối hành động demo với reset có sẵn và cập nhật bố cục trình chiếu |
+| `tests/phase4.test.ts`, `tests/browser-phase4.py`                                  | Kiểm tra dữ liệu, vật lý demo, tour và regression UI trên Chromium                               |
+| `README.md`, `README_.md`, `HANDOVER.md`, `docs/`, `package.json`                  | Hướng dẫn sử dụng/triển khai, đánh giá và phiên bản nghiệm thu                                   |
+
+**Thêm tour:** Thêm cấu hình hoặc sửa `tourFor`, giữ `id` ổn định và tăng `version` khi muốn mời xem lại nội dung đã thay đổi. Mỗi bước có tiêu đề, nội dung và selector mục tiêu. Ưu tiên vùng có nghĩa trong giao diện; mục tiêu không có hoặc bị ẩn sẽ hiện thông báo thay thế. Tour đọc DOM, không tự chỉnh tham số. Trạng thái duy nhất lưu vào localStorage là cờ `phylab:tour:<id>:v<version>`. Khi trình duyệt chặn lưu trữ, cờ được giữ trong bộ nhớ đến khi tải lại.
+
+**Thêm demo:** Thêm ID duy nhất, tên, mục tiêu và chỉ dẫn vào `demoScenarios`. Chọn đúng model và bộ tham số hợp lệ từ mặc định, dùng đơn vị SI. Demo con lắc có thể khai báo `practice` với bài và mốc có sẵn, cùng `params` tạo từ `trialParams`. Không gắn nút demo vào Challenge. Kiểm tra biên slider và hành vi reset khi đang chạy. Danh sách đầy đủ ở [hướng dẫn sử dụng](README_.md#sandbox-guided-tour-và-trình-chiếu).
+
+## Kiểm chứng và lỗi xử lý
+
+- Baseline Git sạch; chạy mới 95/95 test, TypeScript, Prettier, production build đều đạt. Regression tự động 99/99 test, gồm bốn kiểm tra Phase 4. TypeScript và production build đạt.
+- Trong quá trình kiểm thử, một thay đổi ngoài Phase 4 hạ ngưỡng bỏ qua gián đoạn của đồng hồ. Ngưỡng đó bỏ qua frame hợp lệ ở FPS thấp và có thể làm phép đo không tiến. Sau khi được xác nhận, đã khôi phục ngưỡng 250 ms như baseline. Không đổi thuật toán đồng hồ, Canvas hoặc vật lý.
+- Audit giữ một RAF khi mô phỏng chạy. Tour dùng sự kiện cuộn/resize và theo dõi thay đổi DOM trong lúc mở, không có RAF riêng. Giới hạn tham số tiếp tục ở catalog/physics; hash chỉ khớp mô hình và Challenge đã đăng ký. Không thêm đầu vào thực thi mã hoặc cơ chế lưu thông tin cá nhân.
+- Kiểm tra ảnh 1280×720 phát hiện thanh hỗ trợ và bộ chọn chế độ dao động làm điều khiển phát nằm dưới mép khung nhìn. Đã gom các công cụ trình chiếu vào một hàng ở desktop và kiểm tra vị trí nút phát trên cả bảy bàn động.
+
+| Kiểm tra                      | Kết quả                                                                                                                                                                 |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Guided Tour trên Chromium 156 | Lời mời, bỏ qua, hoàn thành, mở lại, refresh, Escape/Tab và trả focus; chuyển bàn/chế độ, resize và target bị ẩn; localStorage bị chặn dùng cờ trong phiên              |
+| Demo và sổ tay                | Nạp 9 demo; chạy, đổi tốc độ, pause và reset; không có quá một RAF chờ; đo và ghi 10 dao động, giữ hàng và dự đoán qua tour, demo, mặc định và chuyển bàn               |
+| Trình chiếu                   | Bật/tắt, đổi bàn, điều khiển và bố cục tại 1920×1080, 1366×768, 1280×720 và 390×844; nút phát trong khung nhìn ở cả ba kích thước desktop                               |
+| Challenge regression          | 21 bài trên Chromium; 15 bài cũ chấm đúng, sáu bài mới có đường đúng/sai, gợi ý và thử lại. Không ghi nhận lỗi console trong các luồng QA                               |
+| Hosting local                 | Production build trên máy chủ tĩnh không có SPA fallback tại `/` và `/phylab/`; mở trực tiếp và refresh hash con lắc/Challenge; JS/CSS/favicon dùng đường dẫn tương đối |
+
+Bộ smoke Phase 4 chạy bằng `python tests/browser-phase4.py` với Chromium và bản production. Các kết quả trên là kiểm tra kỹ thuật trong trình duyệt headless, không đo hiệu quả học tập hoặc độ rõ từ khoảng cách máy chiếu thật.
+
+## Triển khai và việc còn lại
+
+`base: './'`, favicon tương đối và hash routing phù hợp triển khai thư mục `dist/` ở root hoặc subpath. Xem cấu hình GitHub Pages/Cloudflare Pages trong [README](README_.md#build-và-deploy-frontend-tĩnh). `wrangler.jsonc` giữ nguyên cho Workers Static Assets của bản trước. Chưa triển khai Phase 4 công khai; chưa xác minh HTTPS production, thiết bị thật hoặc khoảng cách đọc trên máy chiếu. Sổ tay con lắc chỉ giữ trong phiên trang. Đáp án Challenge vẫn nằm trong bundle tĩnh. Sau khi nghiệm thu tại lớp, chọn đích phát hành và kiểm tra URL thực theo checklist.
+
+---
+
 # PHYLAB — BÀN GIAO PHASE 3
 
 **Ngày lập** 10/11/2026

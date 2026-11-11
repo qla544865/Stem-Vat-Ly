@@ -1,4 +1,4 @@
-# PhyLab — Phase 3
+# PhyLab — 1.0.0-rc.1
 
 Phòng thí nghiệm vật lý tương tác dành cho học sinh THPT, giữ nhận diện **STEM vật lý 11C5**. React + TypeScript + Vite, Canvas 2D và SVG. Không backend, tài khoản, API hay physics engine bên ngoài.
 
@@ -54,6 +54,25 @@ Thanh điều hướng chia nội dung thành ba khu vực. Các liên kết m�
 - Vector vận tốc và gia tốc bật/tắt độc lập; chú thích có công tắc riêng. Vector được scale theo bộ thông số/khung vẽ để dễ nhìn; giá trị vật lý vẫn theo SI. Vector vận tốc lò xo không bị cắt ngưỡng gây bão hòa ở gần vị trí cân bằng.
 - Góc và pha điều chỉnh bằng độ ở UI, chuyển sang radian trước khi tính toán. Công thức và bảng đọc luôn ghi rõ đơn vị.
 - Trên desktop, panel ở bên phải. Khi chiều rộng ≤ 1000 px, panel chuyển xuống dưới; slider xếp hai cột trên tablet, một cột trên màn hình nhỏ.
+
+## Sandbox, Guided Tour và trình chiếu
+
+1. Chọn **Thí nghiệm → Sandbox** để thay từng thông số và so sánh. Bấm **Bắt đầu**, **Tạm dừng/Tiếp tục**, hoặc nút đặt lại thời gian. Trong **Lý thuyết**, hình vẽ cập nhật ngay; không cần chạy đồng hồ.
+2. Ở lần đầu mở một bàn hoặc Challenge Lab, bấm **Bắt đầu hướng dẫn** hoặc **Bỏ qua**. Hộp chỉ dẫn không khóa trang. Dùng **Tiếp theo**, **Quay lại**, **Hoàn thành** hoặc Escape; bấm **Hướng dẫn** để xem lại. Trình duyệt chỉ lưu cờ đã xem theo ID/phiên bản; khi lưu trữ bị chặn, cờ tồn tại trong phiên trang đang mở.
+3. Chọn **Challenge Lab** trên thanh điều hướng, chọn bài, đọc nhiệm vụ và chỉnh các tham số được mở khóa. Nếu có dự đoán, nhập trước khi chạy. **Kiểm tra kết quả** sáng khi đủ điều kiện; có **Gợi ý** và **Thử lại**.
+4. Bấm **Trình chiếu** trên một mô phỏng động. Canvas và số liệu chính được phóng lớn; điều khiển phát, tốc độ, tham số và đồ thị có liên quan vẫn dùng được. Bấm **Thoát trình chiếu** để về bố cục học tập. Các khu vực bên dưới Canvas có thể cần cuộn ở cửa sổ thấp.
+5. Mở **Demo mẫu**, chọn tình huống, đọc chỉ dẫn và bấm **Nạp demo**. Mô phỏng dừng ở t = 0 để người thuyết trình chủ động chạy. **Cấu hình mặc định** khôi phục tham số của mô hình. Demo chỉ áp dụng ngoài Challenge; demo đo con lắc đưa tới phiếu khảo sát chiều dài và giữ sổ tay. Nếu một mốc đã có kết quả, việc chủ động bấm **Ghi kết quả** với lần đo mới có thể cập nhật hàng đó.
+
+| Mô hình           | Demo mẫu                                                    |
+| ----------------- | ----------------------------------------------------------- |
+| Con lắc đơn       | Khối lượng và chu kỳ · Chiều dài và chu kỳ · Đo 10 dao động |
+| Va chạm           | Hai xe đàn hồi · Cùng thông số, va chạm mềm                 |
+| Cơ năng           | Thế năng thành động năng                                    |
+| Dao động nâng cao | Dao động tự do · Dao động tắt dần · Tìm đỉnh cộng hưởng     |
+
+Hướng dẫn con lắc gồm bảy bước, từ kéo quả nặng tới đo và suy ra g. Chỉ các nút **Mở Thực hành** và **Mở Kết quả & đồ thị** mới đổi chế độ từ bên trong tour. Không có thao tác đo, ghi hoặc xóa tự động.
+
+Tài liệu nghiệm thu: [kế hoạch đánh giá](docs/evaluation-plan.md), [phiếu 1–5](docs/evaluation-form.md), [mẫu tổng hợp](docs/evaluation-results-template.md) và [checklist phát hành](docs/release-checklist.md). Chưa có kết quả đánh giá học sinh hoặc giáo viên.
 
 ## Sử dụng nội dung Phase 3
 
@@ -188,8 +207,8 @@ pnpm build
 
 `vite.config.ts` dùng `base: './'`, favicon và tài nguyên build có đường dẫn tương đối. Điều hướng bằng hash, ví dụ `#/oscillator` hoặc `#/challenges/damping-envelope`. Hosting tĩnh có thể phục vụ trực tiếp `index.html` tại thư mục gốc hoặc subpath.
 
-- **GitHub Pages:** build trên CI/máy local rồi triển khai `dist/` làm Pages artifact (hoặc nội dung nhánh xuất bản). Có thể đặt dưới subpath của repository, ví dụ `/PhySim/`, mà không đổi source.
-- **Cloudflare Pages:** build command `pnpm build`, output directory `dist`, dùng Node 22.18+/24+. Không cần Functions hoặc backend.
+- **GitHub Pages:** chọn GitHub Actions trong Settings → Pages, build rồi tải `dist/` làm Pages artifact theo [hướng dẫn GitHub](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages). Có thể đặt dưới subpath của repository, ví dụ `/Stem-Vat-Ly/`. Xác minh [Enforce HTTPS](https://docs.github.com/en/pages/getting-started-with-github-pages/securing-your-github-pages-site-with-https) trên URL phát hành.
+- **Cloudflare Pages:** đặt build command `pnpm build`, output `dist`, Node 24, hoặc tải `dist/` từ máy local. Xem [cấu hình build của Pages](https://developers.cloudflare.com/pages/configuration/build-configuration/). Kiểm tra URL `*.pages.dev` qua HTTPS. `wrangler.jsonc` hiện dành cho Workers Static Assets của bản trước; cấu hình Pages không cần chuyển sang Workers hay Functions.
 - Luôn mở URL thư mục có dấu `/` cuối, ví dụ `https://example.org/PhySim/`. Khi dùng build tự động, cài dependency từ lockfile trước build.
 
 Có thể kiểm tra production dưới subpath tại local:
@@ -199,7 +218,15 @@ pnpm build
 pnpm preview --base /phylab/
 ```
 
-Mở địa chỉ `/phylab/` trên cổng Vite preview in ra. Không publish hosting công khai tự động trong giai đoạn này.
+Mở địa chỉ `/phylab/` trên cổng Vite preview in ra. Bản Phase 4 chưa được triển khai công khai.
+
+### Kiểm thử trình duyệt Phase 4
+
+Sau `pnpm build`, chạy `pnpm preview --port 4176 --base /phylab/`. Cài Playwright cho Python trong môi trường QA riêng (`python -m pip install playwright`, `python -m playwright install chromium`), rồi chạy `python tests/browser-phase4.py`. Có thể chỉ định URL bằng `PHYLAB_QA_URL` hoặc dùng Chromium đã cài bằng `PHYLAB_BROWSER`. Ảnh kiểm thử lưu trong `.qa/` và không vào bản build.
+
+### Giới hạn hiện tại
+
+Mô hình lý tưởng bỏ qua các hiệu ứng không được mô tả trong phần giả thiết. Phép đo con lắc không thêm nhiễu dụng cụ; sổ tay giữ trong phiên trang và mất khi tải lại. Tiến độ Challenge không lưu sau khi rời bài. Dữ liệu và đáp án Challenge nằm ở frontend để học tập, không dùng làm cơ chế bảo mật đề thi. Bản trình chiếu là bố cục web, có thể cần cuộn để xem đồ thị. Phần thực hành lớp học, độ rõ trên máy chiếu thật và nghiệm thu HTTPS production cần được kiểm tra ở môi trường phát hành.
 
 ## Kết quả kiểm chứng Phase 1
 
